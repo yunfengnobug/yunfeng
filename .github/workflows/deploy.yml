@@ -18,11 +18,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. 设置 pnpm（与 packageManager / only-allow / .npmrc 强制约定一致）
+      # 2. 设置 pnpm（版本以 package.json 的 packageManager 为准，此处勿再写 version）
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       # 3. 设置 Node.js 版本（与服务器保持一致）
       - name: Setup Node.js
