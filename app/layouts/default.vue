@@ -23,7 +23,17 @@
       <slot />
     </main>
 
-    <footer class="app-footer">&copy; {{ currentYear }} {{ SITE_NAME }} - 版权所有</footer>
+    <footer class="app-footer">
+      <p class="app-footer__copy">&copy; {{ currentYear }} {{ SITE_NAME }} - 版权所有</p>
+      <a
+        class="app-footer__beian"
+        href="https://beian.miit.gov.cn/"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        豫ICP备2023005087号-3
+      </a>
+    </footer>
   </div>
 </template>
 
@@ -123,12 +133,29 @@ const contentPadding = computed(() => {
   background-color: #f0f2f5;
   min-height: $footer-height;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.35rem;
   color: $color-text-secondary;
   font-size: 0.875rem;
-  padding: 0.75rem 1rem;
+  padding: 0.875rem 1rem;
   text-align: center;
+
+  &__copy {
+    margin: 0;
+  }
+
+  &__beian {
+    color: $color-text-secondary;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    transition: color 0.2s;
+
+    &:hover {
+      color: $color-primary;
+    }
+  }
 }
 
 @media (max-width: $bp-tablet) {
