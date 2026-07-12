@@ -33,19 +33,25 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 5. 从 GitHub Secret 创建 .env（用于构建）
-      #    - Secret 名：ENV_PRODUCTION_YUNFENG（支持多行 KEY=value）
-      #    - 未配置该 Secret 时自动跳过，不阻断部署
-      #    - 注意：此文件仅用于构建阶段；rsync 会排除 .env.*，不会覆盖服务器上的环境变量
-      - name: Create .env from secret
+      # 5. 从 GitHub Secret 写入构建用环境变量
+      #    - NOTIFYX_KEY：NotifyX 发送密钥（写入 NUXT_NOTIFYX_KEY，打进服务端产物）
+      #    - ENV_PRODUCTION_YUNFENG：可选，其它多行 KEY=value
+      #    - 注意：rsync 排除 .env.*，密钥不会以明文文件落到服务器目录
+      - name: Create .env from secrets
         env:
+          NOTIFYX_KEY: ${{ secrets.NOTIFYX_KEY }}
           ENV_PRODUCTION_YUNFENG: ${{ secrets.ENV_PRODUCTION_YUNFENG }}
         run: |
-          if [ -n "$ENV_PRODUCTION_YUNFENG" ]; then
-            printf '%s\n' "$ENV_PRODUCTION_YUNFENG" > .env
-            echo "✅ wrote .env for build"
+          : > .env
+          if [ -n "$NOTIFYX_KEY" ]; then
+            printf 'NUXT_NOTIFYX_KEY=%s\n' "$NOTIFYX_KEY" >> .env
+            echo "✅ wrote NUXT_NOTIFYX_KEY from Secret NOTIFYX_KEY"
           else
-            echo "ℹ️  ENV_PRODUCTION_YUNFENG not set, skip .env"
+            echo "⚠️  Secret NOTIFYX_KEY not set — 反馈接口将不可用"
+          fi
+          if [ -n "$ENV_PRODUCTION_YUNFENG" ]; then
+            printf '%s\n' "$ENV_PRODUCTION_YUNFENG" >> .env
+            echo "✅ appended ENV_PRODUCTION_YUNFENG"
           fi
 
       # 6. 构建 Nuxt 应用（Nitro node-server）
@@ -55,6 +61,8 @@ jobs:
         env:
           # 构建预设；端口仅影响运行时，由 PM2 / ecosystem 管理
           NITRO_PRESET: node-server
+          # 与 runtimeConfig.notifyxKey 对应，构建时注入服务端
+          NUXT_NOTIFYX_KEY: ${{ secrets.NOTIFYX_KEY }}
 
       # 6.1 校验产物，避免把残缺构建同步到服务器
       - name: Verify build output

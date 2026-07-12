@@ -49,28 +49,18 @@
       </div>
     </section>
 
-    <section class="contact-section">
-      <h2>联系方式</h2>
-      <div class="contact-info">
-        <p>欢迎对本网站提出改进意见（不建议深夜打扰）：</p>
-        <ul class="contact-list">
-          <li>QQ: 1768669274</li>
-          <li>WeChat: 同QQ</li>
-          <li>
-            Email:
-            <a href="mailto:ceo@yzre.cn">ceo@yzre.cn</a>
-          </li>
-        </ul>
-      </div>
+    <section class="feedback-section">
+      <h2>建议反馈</h2>
+      <FeedbackForm />
     </section>
   </div>
 </template>
 
 <script setup>
-// 关于页：作者、爱情、网站与联系方式
+// 关于页：作者、爱情、网站与在线建议反馈
 
 useSeoMeta({
-  description: '关于我们、爱情、本站与联系方式',
+  description: '关于我们、爱情、本站与建议反馈',
 })
 </script>
 
@@ -106,22 +96,12 @@ section {
 
 .author-info,
 .website-info,
-.contact-info,
 .love-info {
   color: #555;
   line-height: 1.6;
 
   p {
     margin-bottom: 0.9375rem;
-  }
-
-  ul {
-    list-style-type: disc;
-    margin-left: 1.25rem;
-
-    li {
-      margin-bottom: 0.625rem;
-    }
   }
 
   a,
@@ -134,11 +114,6 @@ section {
       color: #357abd;
       text-decoration: underline;
     }
-  }
-
-  .contact-list {
-    color: #000;
-    font-weight: 500;
   }
 }
 

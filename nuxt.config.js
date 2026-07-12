@@ -21,4 +21,8 @@ export default defineNuxtConfig({
       meta: [{ name: 'description', content: '王俊杰与李朝新的网站：记录生活、技术与爱' }],
     },
   },
+  runtimeConfig: {
+    // NotifyX 发送密钥（仅服务端）；用环境变量 NUXT_NOTIFYX_KEY 覆盖
+    notifyxKey: '',
+  },
 })
