@@ -13,6 +13,9 @@ export default defineEventHandler(async (event) => {
   const title = String(body?.title || '').trim()
   const content = String(body?.content || '').trim()
   const contact = String(body?.contact || '').trim()
+  // 通知标题前缀，用于区分来源项目
+  const titlePrefix = '[云枫]'
+  const maxTitleLen = 100 - titlePrefix.length
 
   if (!title) {
     return { code: 1, message: '请填写标题', data: null }
@@ -20,8 +23,8 @@ export default defineEventHandler(async (event) => {
   if (!content) {
     return { code: 1, message: '请填写反馈内容', data: null }
   }
-  if (title.length > 100) {
-    return { code: 1, message: '标题不能超过 100 字', data: null }
+  if (title.length > maxTitleLen) {
+    return { code: 1, message: `标题不能超过 ${maxTitleLen} 字`, data: null }
   }
   if (content.length > 2000) {
     return { code: 1, message: '内容不能超过 2000 字', data: null }
@@ -30,7 +33,7 @@ export default defineEventHandler(async (event) => {
     return { code: 1, message: '联系方式不能超过 100 字', data: null }
   }
 
-  const payload = { title, content }
+  const payload = { title: `${titlePrefix}${title}`, content }
   // 有联系方式时写入 NotifyX 的 description（简介）字段
   if (contact) {
     payload.description = `联系方式：${contact}`.slice(0, 500)

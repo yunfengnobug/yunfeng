@@ -8,7 +8,7 @@
         v-model.trim="title"
         type="text"
         name="title"
-        maxlength="100"
+        maxlength="96"
         autocomplete="off"
         required
       />
