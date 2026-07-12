@@ -1,0 +1,141 @@
+<template>
+  <div class="app-layout">
+    <header class="app-navbar">
+      <nav class="navbar-content" aria-label="主导航">
+        <div class="logo">
+          <NuxtLink to="/">云枫</NuxtLink>
+        </div>
+        <ul class="nav-links">
+          <li>
+            <NuxtLink to="/">首页</NuxtLink>
+          </li>
+          <li>
+            <NuxtLink to="/about">关于</NuxtLink>
+          </li>
+          <li>
+            <NuxtLink to="/love">我们</NuxtLink>
+          </li>
+        </ul>
+      </nav>
+    </header>
+
+    <main class="app-content" :style="{ padding: contentPadding }">
+      <slot />
+    </main>
+
+    <footer class="app-footer">&copy; {{ currentYear }} 云枫 - 版权所有</footer>
+  </div>
+</template>
+
+<script setup>
+// 站点默认布局：顶栏导航 + 内容区 + 页脚
+
+const route = useRoute()
+
+// 页脚年份（SSR/CSR 同年份一致，跨年瞬间差异可忽略）
+const currentYear = new Date().getFullYear()
+
+// 内容区 padding；页面可通过 definePageMeta({ contentPadding }) 覆盖
+const contentPadding = computed(() => {
+  if ('contentPadding' in route.meta) {
+    return route.meta.contentPadding
+  }
+  return '40px 20px 60px'
+})
+</script>
+
+<style lang="scss" scoped>
+@use '~/assets/styles/variables.scss' as *;
+
+.app-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  .navbar-content {
+    max-width: $content-max-width;
+    margin: 0 auto;
+    padding: 0 1.25rem;
+    height: $navbar-height;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .logo {
+    font-size: 1.25rem;
+    font-weight: bold;
+    flex-shrink: 0;
+
+    a {
+      color: $color-primary;
+    }
+  }
+
+  .nav-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.25rem 0.75rem;
+    margin: 0;
+    padding: 0;
+
+    a {
+      color: $color-text;
+      font-size: 0.875rem;
+      padding: 0.5rem 0.25rem;
+      transition: color 0.3s;
+      display: inline-block;
+      min-height: 44px;
+      line-height: 28px;
+
+      &:hover,
+      &.router-link-active {
+        color: $color-primary;
+      }
+    }
+  }
+}
+
+.app-content {
+  flex: 1;
+  min-height: calc(100vh - #{$navbar-height} - #{$footer-height});
+  max-width: $content-max-width;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.app-footer {
+  background-color: #f0f2f5;
+  min-height: $footer-height;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $color-text-secondary;
+  font-size: 0.875rem;
+  padding: 0.75rem 1rem;
+  text-align: center;
+}
+
+@media (max-width: $bp-tablet) {
+  .app-navbar {
+    .logo {
+      font-size: 1.125rem;
+    }
+
+    .nav-links a {
+      font-size: 0.8125rem;
+    }
+  }
+}
+</style>

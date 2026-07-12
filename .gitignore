@@ -1,32 +1,24 @@
-# Dependencies
-node_modules/
-.pnpm-store/
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
 
-# Nuxt / Nitro
-.nuxt/
-.output/
-.data/
-dist/
+# Node dependencies
+node_modules
 
-# Env & secrets
+# Logs
+logs
+*.log
+
+# Misc
+.DS_Store
+.fleet
+.idea
+
+# Local env files
 .env
 .env.*
 !.env.example
-
-# Logs & debug
-*.log
-npm-debug.log*
-pnpm-debug.log*
-.turbo/
-
-# IDE / OS
-.DS_Store
-Thumbs.db
-*.local
-.idea/
-.vscode/*
-!.vscode/extensions.json
-
-# Test / coverage
-coverage/
-.nyc_output/

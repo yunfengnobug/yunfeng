@@ -1,0 +1,28 @@
+{
+  "name": "yunfeng",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev --host",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "lint": "oxlint ."
+  },
+  "dependencies": {
+    "@pinia/nuxt": "^0.11.2",
+    "nuxt": "^4.4.8",
+    "pinia": "^3.0.3",
+    "vue": "^3.5.39",
+    "vue-router": "^5.1.0"
+  },
+  "devDependencies": {
+    "oxfmt": "^0.26.0",
+    "oxlint": "^1.36.0",
+    "sass": "^1.93.2"
+  },
+  "packageManager": "pnpm@10.33.2"
+}

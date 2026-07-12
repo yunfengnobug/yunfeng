@@ -22,4 +22,4 @@ export default defineEventHandler(async (event) => {
 ## 客户端
 
 - 列表：`useFetch` / `useAsyncData`；按钮动作：`$fetch`
-- 错误用 `ElMessage`；401 跳转登录
+- 错误优先页内提示；有 UI 库时再用其反馈组件；401 跳转登录

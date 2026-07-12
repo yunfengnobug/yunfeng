@@ -1,0 +1,22 @@
+// Nuxt 4 应用配置（纯 JavaScript）
+export default defineNuxtConfig({
+  // 兼容性日期，控制行为切换时间点
+  compatibilityDate: '2025-07-15',
+  // 开发工具，生产构建可关闭
+  devtools: { enabled: true },
+  // 禁用 TypeScript 检查，项目约定纯 JS
+  typescript: {
+    typeCheck: false,
+  },
+  modules: ['@pinia/nuxt'],
+  css: ['~/assets/styles/base.scss'],
+  app: {
+    head: {
+      htmlAttrs: { lang: 'zh-CN' },
+      charset: 'utf-8',
+      viewport: 'width=device-width, initial-scale=1',
+      title: '云枫',
+      meta: [{ name: 'description', content: '云枫的个人网站：记录生活、技术与爱' }],
+    },
+  },
+})
