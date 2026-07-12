@@ -1,0 +1,25 @@
+---
+description: oxfmt / oxlint 格式化与 Lint 强制约定
+alwaysApply: true
+---
+
+# 格式化与 Lint（oxfmt + oxlint）
+
+- 配置以仓库为准，勿擅自改：`.oxlintrc.json`、`.oxfmtrc.json`（无分号、单引号）
+- 不用 Prettier / ESLint
+
+## 脚本
+
+```bash
+pnpm format        # 写入格式化
+pnpm format:check  # 仅检查
+pnpm lint          # oxlint
+```
+
+脚本未就绪时：`pnpm exec oxfmt .` / `pnpm exec oxlint .`
+
+## Agent 流程
+
+1. 每次改完代码后执行：`pnpm format` → `pnpm lint`
+2. 报错先修到通过再结束
+3. 新代码对齐无分号、单引号；不用编辑器格式化覆盖 oxfmt

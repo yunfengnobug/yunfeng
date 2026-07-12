@@ -1,0 +1,82 @@
+---
+description: Vue 3 组件、composables、Pinia 与 SCSS（Nuxt 4 app/）
+globs: app/components/**/*.vue,app/composables/**/*.js,app/stores/**/*.js,app/utils/**/*.js,app/assets/**/*.scss
+alwaysApply: false
+---
+
+# 组件与状态
+
+## 组件
+
+- 顺序：`<template>` → `<script setup>` → `<style lang="scss" scoped>`
+- Props / Emits 用运行时声明；纯展示组件不发请求
+
+```vue
+<template>
+  <div class="page-header">
+    <h2 class="page-header__title">{{ title }}</h2>
+    <button type="button" class="page-header__action" @click="emit('refresh')">
+      刷新
+    </button>
+  </div>
+</template>
+
+<script setup>
+// 页面标题
+const props = defineProps({
+  // 标题文案
+  title: { type: String, required: true },
+})
+
+const emit = defineEmits(['refresh'])
+</script>
+
+<style lang="scss" scoped>
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+
+  &__title {
+    margin: 0;
+  }
+}
+</style>
+```
+
+## Composables / Pinia
+
+```js
+// 用户列表：加载状态与拉取方法
+export function useUserList() {
+  const list = ref([])
+  const loading = ref(false)
+
+  // 按条件请求用户列表
+  async function fetchList(params) {}
+
+  return { list, loading, fetchList }
+}
+```
+
+```js
+// 登录态：token、用户信息与退出
+export const useAuthStore = defineStore('auth', () => {
+  const token = ref(null)
+  const user = ref(null)
+
+  // 清空登录态
+  function logout() {
+    token.value = null
+    user.value = null
+  }
+
+  return { token, user, logout }
+})
+```
+
+## SCSS
+
+- 嵌套 + BEM（`&__` / `&--`）；全局变量与断点放 `app/assets/styles/`
+- 组件默认可在窄屏正常使用；重型 UI 库按需引入，不默认假定 Element Plus

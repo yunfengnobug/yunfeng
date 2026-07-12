@@ -1,0 +1,24 @@
+---
+description: Nuxt 4 页面与布局约定（app/）
+globs: app/pages/**/*.{vue,js},app/layouts/**/*.vue,app/middleware/**/*.js,app/app.vue,app/error.vue
+alwaysApply: false
+---
+
+# 页面与布局
+
+- 路由：`app/pages/`；请求/分页放 composable 或 Pinia，页面保持薄
+- 列表/内容页：首屏数据用 `useAsyncData` / `useFetch`；筛选与分页逻辑下沉，页面保持薄
+- 需鉴权页：`layout` + `middleware` 显式声明；公开页用轻量布局（如 `blank`）
+
+```js
+definePageMeta({
+  // 布局名按页面类型选择（后台壳 / 前台壳 / 无壳）
+  layout: 'default',
+  // 仅受保护页面挂鉴权中间件
+  middleware: ['auth'],
+})
+```
+
+- 布局须自适应窄屏（侧栏可收起/抽屉化）；布局组件不塞业务请求
+- 每页配置合适的 `useSeoMeta`；非首屏块用 `Lazy` 或客户端组件，减少 SSR/hydration 负担
+- `app/layouts/blank.vue`：无壳公开页

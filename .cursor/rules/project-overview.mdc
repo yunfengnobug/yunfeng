@@ -1,0 +1,67 @@
+---
+description: Vue 3 + Nuxt 4 项目总览与通用约定
+alwaysApply: true
+---
+
+# Vue 3 + Nuxt 4 项目约定
+
+## 技术栈
+
+- **Vue 3** + Composition API + `<script setup>`（纯 JavaScript，禁止 TypeScript）
+- **Nuxt 4 最新稳定版**（`nuxt@latest` / `nuxi@latest`，禁止 Nuxt 3）；默认 SSR
+- 状态：Pinia（禁止 Vuex）
+- UI：按场景选型，**不强制 Element Plus**；须兼顾移动端自适应与 SSR（细节见 `ui-responsive-ssr` 规则）
+- 样式：SCSS 嵌套（`<style lang="scss" scoped>`）；不用 UnoCSS / Tailwind 作主方案
+- 模板：SFC `<template>`（禁止 JSX / TSX / `h()` 写页面）
+- 服务端：Nitro（根目录 `server/`，`.js`）
+- 格式化 / Lint：oxfmt + oxlint（细节见 `oxfmt-oxlint` 规则）
+- 包管理：pnpm 10（禁止 npm / yarn）
+
+## 通用约定
+
+- 只用 Composition API；跨页状态用 Pinia
+- 优先 Nuxt 自动导入；`~` 指向 `app/`
+- 分层：页面 → composable/store → UI 组件
+- 需要鉴权的后台页显式声明中间件；公开页不要误挂鉴权
+- 标识符英文；注释简体中文（见下）
+- 布局与交互默认考虑窄屏；数据获取优先可 SSR 的 `useAsyncData` / `useFetch`
+- **改动后复检**：涉及页面/组件/数据获取时，收尾前按 `post-change-hydration-check` 规则检查水合与 SSR 问题
+- **README 同步**：若改动影响安装、启动、脚本、环境变量、目录结构、功能说明等，须在同一轮任务中更新 `README.md`（没有则新建）；纯内部重构且不影响使用则可不改
+
+## 注释（简体中文）
+
+- 文件头：一句话说明模块职责
+- **函数**：每个函数上方注明用途；复杂函数补充关键参数/返回值
+- **配置与参数**：`nuxt.config`、环境变量、`runtimeConfig`、props、API 入参等旁侧说明含义（含开关、默认值、取值范围）
+- 复杂分支 / 鉴权 / 非常规样式：说明为什么
+- 禁止：无意义逐行注释、过时注释
+
+```js
+// 按筛选条件拉取用户列表
+async function fetchList(params) {}
+
+// 每页条数，默认 20
+pageSize: { type: Number, default: 20 },
+```
+
+## 目录（Nuxt 4 默认 `app/`）
+
+| 路径 | 用途 |
+|------|------|
+| `app/pages/` | 路由页面 |
+| `app/layouts/` | 布局 |
+| `app/components/` | 组件 |
+| `app/composables/` | 组合式函数 |
+| `app/stores/` | Pinia |
+| `app/assets/styles/` | 全局 SCSS |
+| `app/utils/` | 工具函数 |
+| `app/app.vue` | 应用根 |
+| `server/api/` | Nitro API |
+| `shared/` | 前后端共享（可选） |
+| `nuxt.config.js` | 配置（`.js`） |
+
+## 禁止
+
+- TypeScript、Options API、Vuex；同页堆叠多套重型 UI 库
+- 组件内裸 `fetch`；提交 `.env` / 密钥
+- 仅桌面可用的布局/交互；在 SSR 不安全处直接使用浏览器 API

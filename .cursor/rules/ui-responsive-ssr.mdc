@@ -1,0 +1,29 @@
+---
+description: UI 选型、移动端自适应与 SSR 优化约定
+globs: app/**/*.{vue,js,scss},nuxt.config.js
+alwaysApply: false
+---
+
+# UI / 自适应 / SSR
+
+## UI 选型
+
+- **不强制 Element Plus**；按场景选型：后台复杂表单/表格可用 Element Plus，前台与移动端优先轻量原生或自建组件
+- 若用 Element Plus：`@element-plus/nuxt` 自动导入、`el-*`、反馈用 `ElMessage` / `ElMessageBox`；勿手写与其重复的基础控件
+- 同一页面不要混用多套重型 UI 库；主题走 CSS 变量，少覆盖第三方内部类名
+
+## 移动端自适应
+
+- 移动优先：布局用 flex / grid + 相对单位；断点与间距统一走 SCSS 变量，避免魔法数字
+- 触控友好：可点区域足够大；避免仅靠 hover 才能完成的操作
+- 表格/宽内容在小屏改为卡片、折叠或横向滚动，并标明可滚动
+- 导航在小屏用抽屉/底部栏等移动模式，勿假定始终有宽侧栏
+- 图片用合适尺寸与 `loading`/`sizes`，避免整页大图撑爆移动端流量
+
+## SSR 优化（Nuxt）
+
+- 首屏数据优先 `useAsyncData` / `useFetch`（可序列化）；浏览器专属 API 放 `onMounted` 或 `import.client`
+- 仅客户端组件加 `.client` 后缀或 `<ClientOnly>`，缩小 hydration 差异
+- 合理 `Lazy` 懒加载非首屏组件；第三方重型库按需/客户端引入
+- 配置 `useHead` / `useSeoMeta`（title、description、og）；关键资源预加载，避免阻塞渲染的大脚本
+- 不在 setup 顶层写仅浏览器可跑的副作用；注意服务端与客户端数据一致性，防止 hydration mismatch

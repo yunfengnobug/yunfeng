@@ -1,0 +1,21 @@
+---
+description: 代码改动后必须复检水合与 SSR 相关问题
+alwaysApply: true
+---
+
+# 改动后复检（水合 / SSR）
+
+每次完成涉及 `app/`、`server/`、`nuxt.config` 或布局/页面/组件的代码改动后，**在收尾前必须做一轮复检**，不要只改完就结束。
+
+## 必查项
+
+- **Hydration mismatch**：服务端与客户端首屏 DOM/文案是否一致（`Date.now()`、`Math.random()`、仅浏览器有的 locale/时区、`window`/`localStorage` 参与首屏渲染等）
+- **浏览器 API**：是否误在 setup 顶层 / 模板首屏路径使用；应放到 `onMounted`、`import.client`、`.client` 组件或 `<ClientOnly>`
+- **数据**：首屏是否用可序列化的 `useAsyncData` / `useFetch`；有无客户端才有、服务端没有的状态导致结构分叉
+- **条件渲染**：`v-if` 首屏条件在 SSR/CSR 是否相同；第三方只在客户端可用的 UI 是否包好
+- **控制台**：若可运行，关注 hydration/SSR 警告；能复现则先修再交付
+
+## 收尾要求
+
+- 发现问题当场修；在回复中简要说明已复检（无问题）或已修复的水合/SSR 点
+- 纯文案/注释/无关 SSR 的改动可略过深查，但改到模板结构、数据获取、生命周期时不可跳过

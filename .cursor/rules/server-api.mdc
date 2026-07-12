@@ -1,0 +1,25 @@
+---
+description: Nitro server API 与数据请求约定
+globs: server/**/*.js,app/composables/**/*.js,app/utils/**/*api*.js
+alwaysApply: false
+---
+
+# Server API
+
+- 路由：`server/api/`，`.js` + 方法后缀（如 `users.get.js`）
+- 统一响应：`{ code, message, data }`
+- 受保护接口在 handler 内鉴权；密钥走 `runtimeConfig` / 环境变量
+- 未登录拒绝；无权限 403
+
+```js
+// 获取用户列表
+export default defineEventHandler(async (event) => {
+  const query = getQuery(event)
+  return { code: 0, message: 'ok', data: { list: [], total: 0 } }
+})
+```
+
+## 客户端
+
+- 列表：`useFetch` / `useAsyncData`；按钮动作：`$fetch`
+- 错误用 `ElMessage`；401 跳转登录
