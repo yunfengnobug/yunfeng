@@ -70,8 +70,7 @@
 // 关于页：作者、爱情、网站与联系方式
 
 useSeoMeta({
-  title: '关于我们 - 云枫',
-  description: '关于云枫、爱情、本站与联系方式',
+  description: '关于我们、爱情、本站与联系方式',
 })
 </script>
 

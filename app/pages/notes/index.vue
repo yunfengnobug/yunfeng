@@ -1,7 +1,7 @@
 <template>
   <div class="notes-page">
     <header class="page-header">
-      <h1 class="page-title">云枫随笔</h1>
+      <h1 class="page-title">随笔</h1>
       <p class="page-subtitle">记录点滴思考，分享个人感悟</p>
     </header>
 
@@ -46,8 +46,7 @@
 import { NOTES, splitTags } from '#shared/notes'
 
 useSeoMeta({
-  title: '云枫随笔 - 云枫',
-  description: '云枫随笔列表',
+  description: '随笔列表',
 })
 
 const notes = NOTES

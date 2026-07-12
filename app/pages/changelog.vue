@@ -32,8 +32,7 @@
 // 更新日志页：本地静态数据时间线
 
 useSeoMeta({
-  title: '更新日志 - 云枫',
-  description: '云枫网站更新日志',
+  description: '网站更新日志',
 })
 
 const changelogData = [

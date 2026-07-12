@@ -15,8 +15,10 @@ export default defineNuxtConfig({
       htmlAttrs: { lang: 'zh-CN' },
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
-      title: '云枫',
-      meta: [{ name: 'description', content: '云枫的个人网站：记录生活、技术与爱' }],
+      // 全站固定标题，个别页面后续再单独覆盖
+      title: '王俊杰 ❤️ 李朝新',
+      titleTemplate: '%s',
+      meta: [{ name: 'description', content: '王俊杰与李朝新的网站：记录生活、技术与爱' }],
     },
   },
 })

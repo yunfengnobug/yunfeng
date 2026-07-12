@@ -3,7 +3,7 @@
     <header class="app-navbar">
       <nav class="navbar-content" aria-label="主导航">
         <div class="logo">
-          <NuxtLink to="/">云枫</NuxtLink>
+          <NuxtLink to="/">{{ SITE_NAME }}</NuxtLink>
         </div>
         <ul class="nav-links">
           <li>
@@ -23,7 +23,7 @@
       <slot />
     </main>
 
-    <footer class="app-footer">&copy; {{ currentYear }} 云枫 - 版权所有</footer>
+    <footer class="app-footer">&copy; {{ currentYear }} {{ SITE_NAME }} - 版权所有</footer>
   </div>
 </template>
 
@@ -72,12 +72,16 @@ const contentPadding = computed(() => {
   }
 
   .logo {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: bold;
-    flex-shrink: 0;
+    flex-shrink: 1;
+    min-width: 0;
+    line-height: 1.3;
 
     a {
       color: $color-primary;
+      display: inline-block;
+      word-break: keep-all;
     }
   }
 
@@ -130,7 +134,7 @@ const contentPadding = computed(() => {
 @media (max-width: $bp-tablet) {
   .app-navbar {
     .logo {
-      font-size: 1.125rem;
+      font-size: 0.9375rem;
     }
 
     .nav-links a {

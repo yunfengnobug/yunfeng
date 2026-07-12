@@ -104,8 +104,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: '我们 - 云枫',
-  description: '云枫与朝新的纪念页',
+  description: '王俊杰与李朝新的纪念页',
 })
 
 const titleChars = '李朝新，我爱你'.split('')

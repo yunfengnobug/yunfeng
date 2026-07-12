@@ -11,8 +11,7 @@
 // 首页：SSR 拉取一言，客户端定时刷新
 
 useSeoMeta({
-  title: '云枫',
-  description: '云枫的个人网站首页',
+  description: SITE_DESCRIPTION,
 })
 
 const hitokotoText = ref('Loading...')

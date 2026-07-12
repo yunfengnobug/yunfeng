@@ -57,8 +57,7 @@ const { data: note } = await useAsyncData(`note-${route.params.id}`, () =>
 )
 
 useSeoMeta({
-  title: () => (note.value ? `${note.value.title} - 云枫随笔` : '随笔详情 - 云枫'),
-  description: () => note.value?.summary || '云枫随笔详情',
+  description: () => note.value?.summary || '随笔详情',
 })
 
 // 返回随笔列表
