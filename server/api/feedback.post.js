@@ -1,7 +1,9 @@
 // 接收站点建议反馈，经 NotifyX 发送消息 API 转发（密钥仅服务端）
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event)
-  const notifyxKey = config.notifyxKey
+  // 优先 runtimeConfig；兼容 PM2 注入的进程环境变量
+  const notifyxKey =
+    config.notifyxKey || process.env.NUXT_NOTIFYX_KEY || process.env.NOTIFYX_KEY || ''
 
   if (!notifyxKey) {
     return { code: 1, message: '反馈服务未配置，请稍后再试', data: null }

@@ -75,11 +75,11 @@ jobs:
       #    - 将 .output/ 内的内容直接同步到 /server/yunfeng
       #      线上目录结构：server/、public/ 等，不再套一层 .output
       #    - 部署路径写死在本文件（/server/项目名），不再使用 DEPLOY_PATH Secret
-      #    - 排除 .env.*、ecosystem、logs，防止 --delete 清掉机上配置与日志
+      #    - 排除 .env.*、.runtime.env、ecosystem、logs，防止 --delete 清掉机上配置与日志
       - name: Deploy build output via rsync
         uses: burnett01/rsync-deployments@7.0.2
         with:
-          switches: -avzr --delete --exclude='.env' --exclude='.env.*' --exclude='ecosystem.config.cjs' --exclude='logs'
+          switches: -avzr --delete --exclude='.env' --exclude='.env.*' --exclude='.runtime.env' --exclude='ecosystem.config.cjs' --exclude='logs'
           path: .output/
           remote_path: /server/yunfeng/
           remote_host: ${{ secrets.HOST }}
@@ -99,16 +99,21 @@ jobs:
           remote_key: ${{ secrets.SSH_KEY }}
 
       # 9. 远程执行零停机部署
+      #    - 将 GitHub Secret NOTIFYX_KEY 写入服务器 .runtime.env，供 PM2 / Nitro 运行时读取
       #    - 创建 logs 目录（防止 PM2 写日志失败）
       #    - 检查 server/index.mjs 是否存在（产物已展开到 /server/yunfeng 根目录）
       #    - 优先使用 pm2 reload（零停机）
       #    - 如果 reload 失败，回退到 pm2 startOrRestart（短暂停机）
       - name: Graceful reload PM2
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          NOTIFYX_KEY: ${{ secrets.NOTIFYX_KEY }}
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
+          # 把 NOTIFYX_KEY 传进远程 shell（名称需出现在 envs 列表）
+          envs: NOTIFYX_KEY
           command_timeout: 60s # 给 reload 充足的时间
           script: |
             set -e
@@ -127,6 +132,15 @@ jobs:
             if [ ! -f "ecosystem.config.cjs" ]; then
               echo "❌ Error: ecosystem.config.cjs not found"
               exit 1
+            fi
+
+            # 写入运行时密钥（仅服务器本地，rsync --delete 已排除该文件）
+            if [ -n "$NOTIFYX_KEY" ]; then
+              umask 077
+              printf 'NUXT_NOTIFYX_KEY=%s\n' "$NOTIFYX_KEY" > .runtime.env
+              echo "✅ wrote .runtime.env for NUXT_NOTIFYX_KEY"
+            else
+              echo "⚠️  NOTIFYX_KEY empty on remote step — 反馈接口可能不可用"
             fi
 
             # 执行零停机 reload，失败则回退到 startOrRestart

@@ -94,10 +94,9 @@ nuxt.config.js
 
 关于页表单 → `POST /api/feedback` → 服务端调用 NotifyX。密钥不会下发到浏览器。
 
-**生产环境：** 仓库 Settings → Secrets and variables → Actions → New repository secret：
+**生产环境：** 仓库 Settings → Secrets → `NOTIFYX_KEY`（只填密钥本身）。
 
-- Name：`NOTIFYX_KEY`
-- Secret：粘贴 NotifyX 后台的 key（只要密钥本身，不要写 `NUXT_NOTIFYX_KEY=`）
+部署时 Actions 会把密钥写入服务器 `/server/yunfeng/.runtime.env`，并由 PM2 注入 `NUXT_NOTIFYX_KEY`（仅构建进产物不够，运行进程也需要该环境变量）。
 
 **本地开发：** 在 `.env` 中配置：
 
