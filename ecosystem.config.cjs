@@ -49,8 +49,7 @@ module.exports = {
         HOST: '0.0.0.0',
         NITRO_HOST: '0.0.0.0',
         // NotifyX 密钥：优先读服务器 .runtime.env（由 GitHub Actions 写入）
-        NUXT_NOTIFYX_KEY:
-          runtimeEnv.NUXT_NOTIFYX_KEY || process.env.NUXT_NOTIFYX_KEY || '',
+        NUXT_NOTIFYX_KEY: runtimeEnv.NUXT_NOTIFYX_KEY || process.env.NUXT_NOTIFYX_KEY || '',
       },
       error_file: './logs/err.log',
       out_file: './logs/out.log',

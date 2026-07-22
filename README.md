@@ -52,7 +52,7 @@ pnpm lint           # oxlint
 
 ```
 app/           # Nuxt 应用（页面、布局、组件、样式）
-server/api/    # Nitro API（如一言代理）
+server/api/    # Nitro API
 shared/        # 前后端可共享数据（可选）
 nuxt.config.js
 ```
@@ -80,13 +80,13 @@ nuxt.config.js
 
 ### GitHub Secrets（Settings → Secrets and variables → Actions）
 
-| Secret 名 | 是否必填 | 说明 |
-|-----------|----------|------|
-| `HOST` | 是 | 服务器 IP 或域名 |
-| `USER` | 是 | SSH 登录用户名 |
-| `SSH_KEY` | 是 | 部署用私钥全文（含 `BEGIN`/`END`） |
-| `NOTIFYX_KEY` | 建议 | NotifyX 发送密钥；CI 构建时注入为 `NUXT_NOTIFYX_KEY` |
-| `ENV_PRODUCTION_YUNFENG` | 否 | 其它构建用环境变量（多行 `KEY=value`） |
+| Secret 名                | 是否必填 | 说明                                                 |
+| ------------------------ | -------- | ---------------------------------------------------- |
+| `HOST`                   | 是       | 服务器 IP 或域名                                     |
+| `USER`                   | 是       | SSH 登录用户名                                       |
+| `SSH_KEY`                | 是       | 部署用私钥全文（含 `BEGIN`/`END`）                   |
+| `NOTIFYX_KEY`            | 建议     | NotifyX 发送密钥；CI 构建时注入为 `NUXT_NOTIFYX_KEY` |
+| `ENV_PRODUCTION_YUNFENG` | 否       | 其它构建用环境变量（多行 `KEY=value`）               |
 
 > 部署目录固定为 `/server/yunfeng`，无需再配置 `DEPLOY_PATH`。
 

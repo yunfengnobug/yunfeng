@@ -8,7 +8,7 @@
 </template>
 
 <script setup>
-// 首页：SSR 拉取一言，客户端定时刷新
+// 首页：浏览器端请求一言（按用户 IP 计限流，避免服务端同 IP QPS）
 
 useSeoMeta({
   description: SITE_DESCRIPTION,
@@ -29,16 +29,19 @@ function applyHitokoto(payload) {
   authorText.value = `—— ${payload.from || ''}${who}`
 }
 
-const { data, refresh } = await useFetch('/api/hitokoto', {
-  // 只取业务 data 字段
-  transform: (res) => res?.data ?? null,
+// 仅客户端请求第三方接口，SSR 首屏保持 Loading，避免水合不一致
+const { data, refresh } = await useFetch('https://v1.hitokoto.cn/', {
+  server: false,
+  lazy: true,
 })
 
-applyHitokoto(data.value)
-
-watch(data, (value) => {
-  applyHitokoto(value)
-})
+watch(
+  data,
+  (value) => {
+    applyHitokoto(value)
+  },
+  { immediate: true },
+)
 
 let hitokotoTimer = null
 
