@@ -30,15 +30,27 @@ function applyHitokoto(payload) {
 }
 
 // 仅客户端请求第三方接口，SSR 首屏保持 Loading，避免水合不一致
-const { data, refresh } = await useFetch('https://v1.hitokoto.cn/', {
+const { data, error, pending, refresh } = await useFetch('https://v1.hitokoto.cn/', {
   server: false,
   lazy: true,
 })
 
 watch(
-  data,
-  (value) => {
-    applyHitokoto(value)
+  [data, pending, error],
+  () => {
+    // 加载中且尚无数据：显示 Loading，勿把 null 当成限流失败
+    if (pending.value) {
+      if (!data.value) {
+        hitokotoText.value = 'Loading...'
+        authorText.value = ''
+      }
+      return
+    }
+    if (error.value || !data.value) {
+      applyHitokoto(null)
+      return
+    }
+    applyHitokoto(data.value)
   },
   { immediate: true },
 )
