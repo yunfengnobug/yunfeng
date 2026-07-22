@@ -14,46 +14,25 @@ useSeoMeta({
   description: SITE_DESCRIPTION,
 })
 
-const hitokotoText = ref('Loading...')
-const authorText = ref('')
+const hitokotoText = ref('用代码表达言语的魅力，用代码书写山河的壮丽。')
+const authorText = ref('——「一言」')
 
 // 将一言接口数据写入展示文案
 function applyHitokoto(payload) {
-  if (!payload) {
-    hitokotoText.value = '获取速率过快，请稍后再试或切换网络重试。'
-    authorText.value = ''
-    return
-  }
   hitokotoText.value = `『${payload.hitokoto}』`
   const who = payload.from_who ? ` (${payload.from_who})` : ''
   authorText.value = `—— ${payload.from || ''}${who}`
 }
 
-// 仅客户端请求第三方接口，SSR 首屏保持 Loading，避免水合不一致
-const { data, error, pending, refresh } = await useFetch('https://v1.hitokoto.cn/', {
+// 仅客户端请求第三方接口；加载中保留当前文案，拿到新数据再替换
+const { data, refresh } = await useFetch('https://v1.hitokoto.cn/', {
   server: false,
   lazy: true,
 })
 
-watch(
-  [data, pending, error],
-  () => {
-    // 加载中且尚无数据：显示 Loading，勿把 null 当成限流失败
-    if (pending.value) {
-      if (!data.value) {
-        hitokotoText.value = 'Loading...'
-        authorText.value = ''
-      }
-      return
-    }
-    if (error.value || !data.value) {
-      applyHitokoto(null)
-      return
-    }
-    applyHitokoto(data.value)
-  },
-  { immediate: true },
-)
+watch(data, (value) => {
+  if (value) applyHitokoto(value)
+})
 
 let hitokotoTimer = null
 

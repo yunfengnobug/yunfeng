@@ -24,7 +24,7 @@
     </main>
 
     <footer class="app-footer">
-      <p class="app-footer__copy">&copy; {{ currentYear }} {{ SITE_NAME }} - 版权所有</p>
+      <p class="app-footer__copy">&copy; {{ currentYear }} 云枫 版权所有</p>
       <a
         class="app-footer__beian"
         href="https://beian.miit.gov.cn/"
