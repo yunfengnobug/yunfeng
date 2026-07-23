@@ -1,5 +1,7 @@
-<!-- 婚纱照全屏预览：三轨跟手滑动切图、双指缩放（仅客户端） -->
+<!-- 婚纱照全屏预览：三轨跟手滑动切图、双指缩放；复用页面已加载图片，邻图按需加载 -->
 <script setup>
+import { isPhotoLoaded, registerPhotoLoaded, resolvePhotoSrc } from '~/utils/photoSrcCache.js'
+
 const props = defineProps({
   // 是否打开
   modelValue: { type: Boolean, default: false },
@@ -28,6 +30,8 @@ const gesturing = ref(false)
 const settling = ref(false)
 // 视口宽度（px），用于轨道定位
 const viewportW = ref(0)
+// 是否允许加载左右邻图（默认否，避免一点开就打 3 次 CDN）
+const neighborsEnabled = ref(false)
 
 const stageRef = ref(null)
 
@@ -51,6 +55,15 @@ const prevUrl = computed(() => props.urls[index.value - 1] || '')
 const currentUrl = computed(() => props.urls[index.value] || '')
 const nextUrl = computed(() => props.urls[index.value + 1] || '')
 
+// 展示用 src：优先内存 blob，避免重复请求 CDN
+const displayCurrent = computed(() => resolvePhotoSrc(currentUrl.value))
+const displayPrev = computed(() =>
+  neighborsEnabled.value && prevUrl.value ? resolvePhotoSrc(prevUrl.value) : '',
+)
+const displayNext = computed(() =>
+  neighborsEnabled.value && nextUrl.value ? resolvePhotoSrc(nextUrl.value) : '',
+)
+
 const counterText = computed(() => {
   const total = props.urls.length
   if (!total) {
@@ -59,16 +72,27 @@ const counterText = computed(() => {
   return `${index.value + 1} / ${total}`
 })
 
-// 当前主图是否仍在加载（切图时重新进入加载态）
+// 当前主图是否仍在加载
 const currentLoading = ref(true)
 
+/** 根据缓存同步加载态 */
+function syncCurrentLoading() {
+  currentLoading.value = !isPhotoLoaded(currentUrl.value)
+}
+
 watch(currentUrl, () => {
-  currentLoading.value = true
+  syncCurrentLoading()
 })
 
-/** 当前主图加载完成 */
-function onCurrentImgLoad() {
+/** 当前主图加载完成并写入缓存 */
+function onCurrentImgLoad(event) {
   currentLoading.value = false
+  registerPhotoLoaded(currentUrl.value, event?.target)
+}
+
+/** 允许加载邻图（开始横滑或键盘切图时） */
+function enableNeighbors() {
+  neighborsEnabled.value = true
 }
 
 const zoomed = computed(() => scale.value > 1.08)
@@ -175,6 +199,7 @@ function go(delta) {
   if (settling.value) {
     return
   }
+  enableNeighbors()
   // 放大态先还原再切
   if (zoomed.value) {
     resetTransform()
@@ -282,6 +307,9 @@ function onTouchMove(e) {
     // 轴锁定，避免斜滑抖动
     if (axis === 'pending' && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
       axis = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y'
+      if (axis === 'x') {
+        enableNeighbors()
+      }
     }
     if (axis === 'y') {
       dragX.value = 0
@@ -420,6 +448,9 @@ watch(
       resetTransform()
       settling.value = false
       gesturing.value = false
+      // 打开时不预加载邻图
+      neighborsEnabled.value = false
+      syncCurrentLoading()
       nextTick(() => {
         measureViewport()
       })
@@ -481,7 +512,8 @@ onBeforeUnmount(() => {
         <!-- 放大时：单图平移缩放 -->
         <div v-if="zoomed" class="photo-lb__zoom-layer">
           <img
-            :src="currentUrl"
+            :key="`zoom-${currentUrl}`"
+            :src="displayCurrent"
             alt="婚纱照大图"
             class="photo-lb__img"
             :style="currentImgStyle"
@@ -493,15 +525,22 @@ onBeforeUnmount(() => {
           />
         </div>
 
-        <!-- 未放大：三轨跟手滑动 -->
+        <!-- 未放大：三轨跟手滑动；邻图仅在横滑/切图后加载 -->
         <div v-else class="photo-lb__track" :style="trackStyleFixed">
           <div class="photo-lb__slide" :style="slideWidthStyle">
-            <img v-if="prevUrl" :src="prevUrl" alt="" class="photo-lb__img" draggable="false" />
+            <img
+              v-if="displayPrev"
+              :src="displayPrev"
+              alt=""
+              class="photo-lb__img"
+              draggable="false"
+            />
           </div>
           <div class="photo-lb__slide" :style="slideWidthStyle">
             <img
-              v-if="currentUrl"
-              :src="currentUrl"
+              v-if="displayCurrent"
+              :key="`cur-${currentUrl}`"
+              :src="displayCurrent"
               alt="婚纱照大图"
               class="photo-lb__img"
               draggable="false"
@@ -512,7 +551,13 @@ onBeforeUnmount(() => {
             />
           </div>
           <div class="photo-lb__slide" :style="slideWidthStyle">
-            <img v-if="nextUrl" :src="nextUrl" alt="" class="photo-lb__img" draggable="false" />
+            <img
+              v-if="displayNext"
+              :src="displayNext"
+              alt=""
+              class="photo-lb__img"
+              draggable="false"
+            />
           </div>
         </div>
       </div>
