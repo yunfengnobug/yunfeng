@@ -16,7 +16,7 @@ export default defineEventHandler(async () => {
     const rows = await query(
       `SELECT id, category, url, sort_order
        FROM wedding_photos
-       ORDER BY sort_order DESC, id DESC`,
+       ORDER BY sort_order ASC, id ASC`,
     )
 
     const draft = []
