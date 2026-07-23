@@ -33,44 +33,25 @@ const basePhotos = computed(() => photoData.value?.base || [])
 // 底图默认收起（SSR/CSR 初始均为 false，无水合分叉）
 const baseOpen = ref(false)
 
-// 灯箱：当前大图 url；null 表示关闭
-const lightboxUrl = ref(null)
+// 灯箱：仅客户端打开；初始关闭保证水合一致
+const lightboxOpen = ref(false)
+const lightboxUrls = ref([])
+const lightboxIndex = ref(0)
 
 /**
- * 打开灯箱
- * @param {string} url
+ * 打开全屏预览（在当前分区内左右滑切换）
+ * @param {Array<{ url: string }>} list
+ * @param {number} index
  */
-function openLightbox(url) {
-  lightboxUrl.value = url
-}
-
-/** 关闭灯箱 */
-function closeLightbox() {
-  lightboxUrl.value = null
+function openLightbox(list, index) {
+  lightboxUrls.value = (list || []).map((item) => item.url).filter(Boolean)
+  lightboxIndex.value = index
+  lightboxOpen.value = true
 }
 
 /** 切换底图展开 */
 function toggleBase() {
   baseOpen.value = !baseOpen.value
-}
-
-onMounted(() => {
-  // Esc 关闭灯箱（仅客户端）
-  window.addEventListener('keydown', onLightboxKeydown)
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onLightboxKeydown)
-})
-
-/**
- * 键盘关闭灯箱
- * @param {KeyboardEvent} e
- */
-function onLightboxKeydown(e) {
-  if (e.key === 'Escape') {
-    closeLightbox()
-  }
 }
 </script>
 
@@ -92,11 +73,11 @@ function onLightboxKeydown(e) {
       <p v-if="!finalPhotos.length" class="wedding__empty">精修照片即将上传</p>
       <div v-else class="final-grid">
         <button
-          v-for="item in finalPhotos"
+          v-for="(item, index) in finalPhotos"
           :key="item.id"
           type="button"
           class="final-card"
-          @click="openLightbox(item.url)"
+          @click="openLightbox(finalPhotos, index)"
         >
           <img :src="item.url" :alt="`精修 ${item.id}`" loading="lazy" />
         </button>
@@ -112,11 +93,11 @@ function onLightboxKeydown(e) {
       <p v-if="!draftPhotos.length" class="wedding__empty">初修照片即将上传</p>
       <div v-else class="draft-grid">
         <button
-          v-for="item in draftPhotos"
+          v-for="(item, index) in draftPhotos"
           :key="item.id"
           type="button"
           class="draft-card"
-          @click="openLightbox(item.url)"
+          @click="openLightbox(draftPhotos, index)"
         >
           <img :src="item.url" :alt="`初修 ${item.id}`" loading="lazy" />
         </button>
@@ -137,33 +118,19 @@ function onLightboxKeydown(e) {
       </button>
       <div v-show="baseOpen" class="draft-grid draft-grid--base">
         <button
-          v-for="item in basePhotos"
+          v-for="(item, index) in basePhotos"
           :key="item.id"
           type="button"
           class="draft-card"
-          @click="openLightbox(item.url)"
+          @click="openLightbox(basePhotos, index)"
         >
           <img :src="item.url" :alt="`底图 ${item.id}`" loading="lazy" />
         </button>
       </div>
     </section>
 
-    <!-- 灯箱：ClientOnly 避免 SSR/CSR 交互态差异；内容由 lightboxUrl 驱动 -->
-    <Teleport to="body">
-      <div
-        v-if="lightboxUrl"
-        class="lightbox"
-        role="dialog"
-        aria-modal="true"
-        aria-label="查看大图"
-        @click.self="closeLightbox"
-      >
-        <button type="button" class="lightbox__close" aria-label="关闭" @click="closeLightbox">
-          ×
-        </button>
-        <img :src="lightboxUrl" alt="婚纱照大图" class="lightbox__img" />
-      </div>
-    </Teleport>
+    <!-- 客户端全屏预览：左右滑 / 双指缩放 -->
+    <LovePhotoLightbox v-model="lightboxOpen" :urls="lightboxUrls" :start-index="lightboxIndex" />
   </div>
 </template>
 
@@ -290,13 +257,13 @@ function onLightboxKeydown(e) {
 }
 
 .final-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.75rem;
+  // 等宽瀑布流：列宽一致，高度随图片比例变化（不裁切）
+  column-count: 1;
+  column-gap: 1.25rem;
 
   @media (min-width: $bp-tablet) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 2rem;
+    column-count: 2;
+    column-gap: 1.5rem;
   }
 }
 
@@ -304,12 +271,14 @@ function onLightboxKeydown(e) {
   appearance: none;
   border: none;
   padding: 0;
-  margin: 0;
+  margin: 0 0 1.25rem;
   background: transparent;
   cursor: zoom-in;
   display: block;
   width: 100%;
-  overflow: hidden;
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
   // 精修：无圆角卡片感，全幅沉浸
   box-shadow: 0 12px 40px rgba(60, 40, 30, 0.12);
 
@@ -317,24 +286,27 @@ function onLightboxKeydown(e) {
     display: block;
     width: 100%;
     height: auto;
-    aspect-ratio: 3 / 4;
-    object-fit: cover;
+    vertical-align: top;
     transition: transform 0.45s ease;
   }
 
   &:hover img {
-    transform: scale(1.02);
+    transform: scale(1.015);
   }
 }
 
 .draft-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.5rem;
+  // 等宽瀑布流
+  column-count: 2;
+  column-gap: 0.5rem;
 
   @media (min-width: $bp-tablet) {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.65rem;
+    column-count: 3;
+    column-gap: 0.65rem;
+  }
+
+  @media (min-width: 1024px) {
+    column-count: 4;
   }
 
   &--base {
@@ -347,61 +319,25 @@ function onLightboxKeydown(e) {
   appearance: none;
   border: none;
   padding: 0;
-  margin: 0;
+  margin: 0 0 0.5rem;
   background: #ebe4de;
   cursor: zoom-in;
   display: block;
   width: 100%;
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
   overflow: hidden;
 
   img {
     display: block;
     width: 100%;
-    aspect-ratio: 1;
-    object-fit: cover;
+    height: auto;
     transition: opacity 0.25s ease;
   }
 
   &:hover img {
     opacity: 0.88;
-  }
-}
-
-.lightbox {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: rgba(20, 14, 12, 0.92);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-  cursor: zoom-out;
-
-  &__close {
-    position: absolute;
-    top: 1rem;
-    right: 1.25rem;
-    appearance: none;
-    border: none;
-    background: transparent;
-    color: #fff;
-    font-size: 2rem;
-    line-height: 1;
-    cursor: pointer;
-    opacity: 0.8;
-
-    &:hover {
-      opacity: 1;
-    }
-  }
-
-  &__img {
-    max-width: min(100%, 1100px);
-    max-height: 90vh;
-    object-fit: contain;
-    cursor: default;
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
   }
 }
 </style>

@@ -31,11 +31,11 @@
 
 本地复制 `.env.example` 为 `.env`（已 gitignore，勿提交）：
 
-| 变量                                  | 说明                                          |
-| ------------------------------------- | --------------------------------------------- |
-| `DB_HOST` / `DB_PORT`                 | MySQL（与 admin 同库，只读）                  |
-| `DB_USER` / `DB_PASSWORD` / `DB_NAME` | 同上                                          |
-| `NOTIFYX_KEY`                         | NotifyX 密钥（亦可用 `NUXT_NOTIFYX_KEY`）     |
+| 变量                                  | 说明                                      |
+| ------------------------------------- | ----------------------------------------- |
+| `DB_HOST` / `DB_PORT`                 | MySQL（与 admin 同库，只读）              |
+| `DB_USER` / `DB_PASSWORD` / `DB_NAME` | 同上                                      |
+| `NOTIFYX_KEY`                         | NotifyX 密钥（亦可用 `NUXT_NOTIFYX_KEY`） |
 
 建表由 **admin** 启动时自动完成；yunfeng 不跑建表。
 
@@ -96,12 +96,12 @@ nuxt.config.js
 
 ### GitHub Secrets（Settings → Secrets and variables → Actions）
 
-| Secret 名                | 是否必填 | 说明                                                                                          |
-| ------------------------ | -------- | --------------------------------------------------------------------------------------------- |
-| `HOST`                   | 是       | 服务器 IP 或域名                                                                              |
-| `USER`                   | 是       | SSH 登录用户名                                                                                |
-| `SSH_KEY`                | 是       | 部署用私钥全文（含 `BEGIN`/`END`）                                                            |
-| `ENV_PRODUCTION_YUNFENG` | 是       | 整份生产环境变量（多行 `KEY=value`，与本地 `.env` 同格式；含 `DB_*` 与 `NOTIFYX_KEY`）        |
+| Secret 名                | 是否必填 | 说明                                                                                   |
+| ------------------------ | -------- | -------------------------------------------------------------------------------------- |
+| `HOST`                   | 是       | 服务器 IP 或域名                                                                       |
+| `USER`                   | 是       | SSH 登录用户名                                                                         |
+| `SSH_KEY`                | 是       | 部署用私钥全文（含 `BEGIN`/`END`）                                                     |
+| `ENV_PRODUCTION_YUNFENG` | 是       | 整份生产环境变量（多行 `KEY=value`，与本地 `.env` 同格式；含 `DB_*` 与 `NOTIFYX_KEY`） |
 
 > 部署目录固定为 `/server/yunfeng`，无需再配置 `DEPLOY_PATH`。  
 > 旧的单独 Secret `NOTIFYX_KEY` 已废弃，请删掉，统一放进 `ENV_PRODUCTION_YUNFENG`。
