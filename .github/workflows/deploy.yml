@@ -2,6 +2,7 @@
 # 触发条件：推送到 main 分支
 # 部署方式：Nuxt 4（Nitro .output）+ PM2 零停机 reload
 # 包管理：仅 pnpm；运行端口：3001（见 ecosystem.config.cjs）
+# 业务环境变量：仅使用 Secret ENV_PRODUCTION_YUNFENG（多行 KEY=value，含 DB_* / NotifyX）
 
 name: Deploy yunfeng
 
@@ -34,25 +35,18 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # 5. 从 GitHub Secret 写入构建用环境变量
-      #    - NOTIFYX_KEY：NotifyX 发送密钥（写入 NUXT_NOTIFYX_KEY，打进服务端产物）
-      #    - ENV_PRODUCTION_YUNFENG：可选，其它多行 KEY=value
+      #    - ENV_PRODUCTION_YUNFENG：整份生产环境变量（多行 KEY=value）
       #    - 注意：rsync 排除 .env.*，密钥不会以明文文件落到服务器目录
       - name: Create .env from secrets
         env:
-          NOTIFYX_KEY: ${{ secrets.NOTIFYX_KEY }}
           ENV_PRODUCTION_YUNFENG: ${{ secrets.ENV_PRODUCTION_YUNFENG }}
         run: |
-          : > .env
-          if [ -n "$NOTIFYX_KEY" ]; then
-            printf 'NUXT_NOTIFYX_KEY=%s\n' "$NOTIFYX_KEY" >> .env
-            echo "✅ wrote NUXT_NOTIFYX_KEY from Secret NOTIFYX_KEY"
-          else
-            echo "⚠️  Secret NOTIFYX_KEY not set — 反馈接口将不可用"
+          if [ -z "$ENV_PRODUCTION_YUNFENG" ]; then
+            echo "❌ Secret ENV_PRODUCTION_YUNFENG 未配置（请粘贴与本地 .env 相同的多行 KEY=value）"
+            exit 1
           fi
-          if [ -n "$ENV_PRODUCTION_YUNFENG" ]; then
-            printf '%s\n' "$ENV_PRODUCTION_YUNFENG" >> .env
-            echo "✅ appended ENV_PRODUCTION_YUNFENG"
-          fi
+          printf '%s\n' "$ENV_PRODUCTION_YUNFENG" > .env
+          echo "✅ wrote .env from ENV_PRODUCTION_YUNFENG"
 
       # 6. 构建 Nuxt 应用（Nitro node-server）
       #    产物位于 .output/ 目录（入口：.output/server/index.mjs）
@@ -61,8 +55,6 @@ jobs:
         env:
           # 构建预设；端口仅影响运行时，由 PM2 / ecosystem 管理
           NITRO_PRESET: node-server
-          # 与 runtimeConfig.notifyxKey 对应，构建时注入服务端
-          NUXT_NOTIFYX_KEY: ${{ secrets.NOTIFYX_KEY }}
 
       # 6.1 校验产物，避免把残缺构建同步到服务器
       - name: Verify build output
@@ -99,7 +91,7 @@ jobs:
           remote_key: ${{ secrets.SSH_KEY }}
 
       # 9. 远程执行零停机部署
-      #    - 将 GitHub Secret NOTIFYX_KEY 写入服务器 .runtime.env，供 PM2 / Nitro 运行时读取
+      #    - 将 ENV_PRODUCTION_YUNFENG 写入服务器 .runtime.env，并补全 NUXT_ 运行时别名
       #    - 创建 logs 目录（防止 PM2 写日志失败）
       #    - 检查 server/index.mjs 是否存在（产物已展开到 /server/yunfeng 根目录）
       #    - 优先使用 pm2 reload（零停机）
@@ -107,13 +99,13 @@ jobs:
       - name: Graceful reload PM2
         uses: appleboy/ssh-action@v1.2.0
         env:
-          NOTIFYX_KEY: ${{ secrets.NOTIFYX_KEY }}
+          ENV_PRODUCTION_YUNFENG: ${{ secrets.ENV_PRODUCTION_YUNFENG }}
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
-          # 把 NOTIFYX_KEY 传进远程 shell（名称需出现在 envs 列表）
-          envs: NOTIFYX_KEY
+          # 把 ENV_PRODUCTION_YUNFENG 传进远程 shell（名称需出现在 envs 列表）
+          envs: ENV_PRODUCTION_YUNFENG
           command_timeout: 60s # 给 reload 充足的时间
           script: |
             set -e
@@ -134,14 +126,33 @@ jobs:
               exit 1
             fi
 
-            # 写入运行时密钥（仅服务器本地，rsync --delete 已排除该文件）
-            if [ -n "$NOTIFYX_KEY" ]; then
-              umask 077
-              printf 'NUXT_NOTIFYX_KEY=%s\n' "$NOTIFYX_KEY" > .runtime.env
-              echo "✅ wrote .runtime.env for NUXT_NOTIFYX_KEY"
-            else
-              echo "⚠️  NOTIFYX_KEY empty on remote step — 反馈接口可能不可用"
+            # 写入运行时环境（仅服务器本地，rsync --delete 已排除该文件）
+            # 本地键名（DB_* / NOTIFYX_KEY）同时写出 NUXT_*，供 Nitro runtimeConfig 运行时覆盖
+            if [ -z "$ENV_PRODUCTION_YUNFENG" ]; then
+              echo "❌ ENV_PRODUCTION_YUNFENG empty"
+              exit 1
             fi
+            umask 077
+            {
+              printf '%s\n' "$ENV_PRODUCTION_YUNFENG"
+              printf '%s\n' "$ENV_PRODUCTION_YUNFENG" | while IFS= read -r line || [ -n "$line" ]; do
+                trimmed=$(printf '%s' "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                case "$trimmed" in
+                  ''|\#*) continue ;;
+                esac
+                key=${trimmed%%=*}
+                val=${trimmed#*=}
+                case "$key" in
+                  DB_HOST) printf 'NUXT_DB_HOST=%s\n' "$val" ;;
+                  DB_PORT) printf 'NUXT_DB_PORT=%s\n' "$val" ;;
+                  DB_USER) printf 'NUXT_DB_USER=%s\n' "$val" ;;
+                  DB_PASSWORD) printf 'NUXT_DB_PASSWORD=%s\n' "$val" ;;
+                  DB_NAME) printf 'NUXT_DB_NAME=%s\n' "$val" ;;
+                  NOTIFYX_KEY) printf 'NUXT_NOTIFYX_KEY=%s\n' "$val" ;;
+                esac
+              done
+            } > .runtime.env
+            echo "✅ wrote .runtime.env from ENV_PRODUCTION_YUNFENG（含 NUXT_ 别名）"
 
             # 执行零停机 reload，失败则回退到 startOrRestart
             echo "🔄 Attempting zero-downtime reload..."

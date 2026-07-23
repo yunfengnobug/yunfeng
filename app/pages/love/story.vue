@@ -2,6 +2,10 @@
   <div class="love-container">
     <LoveHearts />
 
+    <nav class="story-nav" aria-label="返回婚纱照">
+      <NuxtLink to="/love" class="story-nav__link">← 返回婚纱照</NuxtLink>
+    </nav>
+
     <header class="header">
       <h1 class="love-title">
         <span
@@ -96,7 +100,7 @@
 </template>
 
 <script setup>
-// 「我们」纪念页：静态内容可 SSR；随机爱心由客户端组件承载
+// 「我们的故事」纪念页（由原 /love 迁入）；随机爱心由客户端组件承载
 
 definePageMeta({
   // 去掉内容区内边距，全宽沉浸展示
@@ -104,6 +108,7 @@ definePageMeta({
 })
 
 useSeoMeta({
+  title: '我们的故事',
   description: '王俊杰与李朝新的纪念页',
 })
 
@@ -184,6 +189,25 @@ const letterLines = [
   min-height: 100vh;
   background: linear-gradient(135deg, #fff5f5 0%, #ffe4ec 50%, #ffd6e7 100%);
   overflow: hidden;
+
+  .story-nav {
+    position: relative;
+    z-index: 3;
+    padding: 1rem 1.25rem 0;
+    max-width: 960px;
+    margin: 0 auto;
+
+    &__link {
+      font-size: 0.9rem;
+      color: #e91e63;
+      opacity: 0.85;
+
+      &:hover {
+        opacity: 1;
+        text-decoration: underline;
+      }
+    }
+  }
 
   .header {
     position: relative;

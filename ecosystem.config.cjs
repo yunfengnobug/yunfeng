@@ -5,17 +5,26 @@
 const fs = require('fs')
 const path = require('path')
 
-// 读取部署时写入的运行时密钥文件（勿提交仓库）
+/**
+ * 读取部署时写入的运行时密钥文件（勿提交仓库）
+ * @returns {Record<string, string>}
+ */
 function loadRuntimeEnv() {
   const envPath = path.join(__dirname, '.runtime.env')
   const result = {}
-  if (!fs.existsSync(envPath)) return result
+  if (!fs.existsSync(envPath)) {
+    return result
+  }
   const text = fs.readFileSync(envPath, 'utf8')
   for (const line of text.split(/\r?\n/)) {
     const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith('#')) continue
+    if (!trimmed || trimmed.startsWith('#')) {
+      continue
+    }
     const idx = trimmed.indexOf('=')
-    if (idx <= 0) continue
+    if (idx <= 0) {
+      continue
+    }
     const key = trimmed.slice(0, idx).trim()
     const value = trimmed.slice(idx + 1).trim()
     result[key] = value
@@ -48,8 +57,8 @@ module.exports = {
         NITRO_PORT: 3001,
         HOST: '0.0.0.0',
         NITRO_HOST: '0.0.0.0',
-        // NotifyX 密钥：优先读服务器 .runtime.env（由 GitHub Actions 写入）
-        NUXT_NOTIFYX_KEY: runtimeEnv.NUXT_NOTIFYX_KEY || process.env.NUXT_NOTIFYX_KEY || '',
+        // 运行时密钥：NotifyX / DB_* 等，由 Actions 写入 .runtime.env 后整表注入
+        ...runtimeEnv,
       },
       error_file: './logs/err.log',
       out_file: './logs/out.log',
