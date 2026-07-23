@@ -59,6 +59,18 @@ const counterText = computed(() => {
   return `${index.value + 1} / ${total}`
 })
 
+// 当前主图是否仍在加载（切图时重新进入加载态）
+const currentLoading = ref(true)
+
+watch(currentUrl, () => {
+  currentLoading.value = true
+})
+
+/** 当前主图加载完成 */
+function onCurrentImgLoad() {
+  currentLoading.value = false
+}
+
 const zoomed = computed(() => scale.value > 1.08)
 
 /** 三轨容器位移：默认停在中间页；跟手时无 transition，松手 settling 时缓动 */
@@ -462,6 +474,10 @@ onBeforeUnmount(() => {
         @touchend="onTouchEnd"
         @touchcancel="onTouchCancel"
       >
+        <div v-if="currentLoading" class="photo-lb__loading" aria-hidden="true">
+          <span class="photo-lb__spinner" />
+        </div>
+
         <!-- 放大时：单图平移缩放 -->
         <div v-if="zoomed" class="photo-lb__zoom-layer">
           <img
@@ -470,6 +486,8 @@ onBeforeUnmount(() => {
             class="photo-lb__img"
             :style="currentImgStyle"
             draggable="false"
+            @load="onCurrentImgLoad"
+            @error="onCurrentImgLoad"
             @dblclick.prevent="onDoubleClick"
             @click.stop
           />
@@ -487,6 +505,8 @@ onBeforeUnmount(() => {
               alt="婚纱照大图"
               class="photo-lb__img"
               draggable="false"
+              @load="onCurrentImgLoad"
+              @error="onCurrentImgLoad"
               @dblclick.prevent="onDoubleClick"
               @click.stop
             />
@@ -592,6 +612,25 @@ onBeforeUnmount(() => {
       calc(2.2rem + env(safe-area-inset-bottom, 0px));
   }
 
+  &__loading {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  &__spinner {
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-top-color: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    animation: photo-lb-spin 0.7s linear infinite;
+  }
+
   &__track {
     display: flex;
     height: 100%;
@@ -659,6 +698,12 @@ onBeforeUnmount(() => {
     &--next {
       right: 1rem;
     }
+  }
+}
+
+@keyframes photo-lb-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>

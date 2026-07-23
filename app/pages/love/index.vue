@@ -11,20 +11,23 @@ useSeoMeta({
 })
 
 // SSR 拉取三类照片；失败时给空数组，避免页面崩溃
-const { data: photoData } = await useAsyncData('wedding-photos', async () => {
-  try {
-    const res = await $fetch('/api/wedding-photos')
-    return (
-      res?.data || {
-        draft: [],
-        final: [],
-        base: [],
-      }
-    )
-  } catch {
-    return { draft: [], final: [], base: [] }
-  }
-})
+const { data: photoData, pending: photosPending } = await useAsyncData(
+  'wedding-photos',
+  async () => {
+    try {
+      const res = await $fetch('/api/wedding-photos')
+      return (
+        res?.data || {
+          draft: [],
+          final: [],
+          base: [],
+        }
+      )
+    } catch {
+      return { draft: [], final: [], base: [] }
+    }
+  },
+)
 
 const finalPhotos = computed(() => photoData.value?.final || [])
 const draftPhotos = computed(() => photoData.value?.draft || [])
@@ -70,7 +73,12 @@ function toggleBase() {
         <h2 id="final-heading" class="wedding__section-title">精修</h2>
         <p class="wedding__section-desc">精选成片</p>
       </div>
-      <p v-if="!finalPhotos.length" class="wedding__empty">精修照片即将上传</p>
+      <p v-if="!finalPhotos.length && !photosPending" class="wedding__empty">精修照片即将上传</p>
+      <div v-else-if="photosPending" class="final-grid" aria-busy="true">
+        <div v-for="n in 2" :key="`final-sk-${n}`" class="final-card final-card--skeleton">
+          <span class="wedding-skel" />
+        </div>
+      </div>
       <div v-else class="final-grid">
         <button
           v-for="(item, index) in finalPhotos"
@@ -79,7 +87,7 @@ function toggleBase() {
           class="final-card"
           @click="openLightbox(finalPhotos, index)"
         >
-          <img :src="item.url" :alt="`精修 ${item.id}`" loading="lazy" />
+          <LovePhotoThumb :src="item.url" :alt="`精修 ${item.id}`" />
         </button>
       </div>
     </section>
@@ -90,7 +98,12 @@ function toggleBase() {
         <h2 id="draft-heading" class="wedding__section-title">初修</h2>
         <p class="wedding__section-desc">更多瞬间</p>
       </div>
-      <p v-if="!draftPhotos.length" class="wedding__empty">初修照片即将上传</p>
+      <p v-if="!draftPhotos.length && !photosPending" class="wedding__empty">初修照片即将上传</p>
+      <div v-else-if="photosPending" class="draft-grid" aria-busy="true">
+        <div v-for="n in 6" :key="`draft-sk-${n}`" class="draft-card draft-card--skeleton">
+          <span class="wedding-skel" />
+        </div>
+      </div>
       <div v-else class="draft-grid">
         <button
           v-for="(item, index) in draftPhotos"
@@ -99,7 +112,7 @@ function toggleBase() {
           class="draft-card"
           @click="openLightbox(draftPhotos, index)"
         >
-          <img :src="item.url" :alt="`初修 ${item.id}`" loading="lazy" />
+          <LovePhotoThumb :src="item.url" :alt="`初修 ${item.id}`" />
         </button>
       </div>
     </section>
@@ -124,7 +137,7 @@ function toggleBase() {
           class="draft-card"
           @click="openLightbox(basePhotos, index)"
         >
-          <img :src="item.url" :alt="`底图 ${item.id}`" loading="lazy" />
+          <LovePhotoThumb :src="item.url" :alt="`底图 ${item.id}`" />
         </button>
       </div>
     </section>
@@ -282,16 +295,17 @@ function toggleBase() {
   // 精修：无圆角卡片感，全幅沉浸
   box-shadow: 0 12px 40px rgba(60, 40, 30, 0.12);
 
-  img {
-    display: block;
-    width: 100%;
-    height: auto;
-    vertical-align: top;
+  :deep(.photo-thumb) {
     transition: transform 0.45s ease;
   }
 
-  &:hover img {
+  &:hover :deep(.photo-thumb) {
     transform: scale(1.015);
+  }
+
+  &--skeleton {
+    pointer-events: none;
+    box-shadow: none;
   }
 }
 
@@ -329,15 +343,33 @@ function toggleBase() {
   page-break-inside: avoid;
   overflow: hidden;
 
-  img {
-    display: block;
-    width: 100%;
-    height: auto;
-    transition: opacity 0.25s ease;
+  &:hover :deep(.photo-thumb__img) {
+    opacity: 0.88;
   }
 
-  &:hover img {
-    opacity: 0.88;
+  &--skeleton {
+    pointer-events: none;
+    min-height: 10rem;
+    background: transparent;
+  }
+}
+
+.wedding-skel {
+  display: block;
+  width: 100%;
+  min-height: 14rem;
+  border-radius: 2px;
+  background: linear-gradient(110deg, #ebe4de 25%, #f7f1ec 37%, #ebe4de 63%);
+  background-size: 200% 100%;
+  animation: wedding-page-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes wedding-page-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
   }
 }
 </style>
