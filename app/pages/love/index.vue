@@ -1,5 +1,7 @@
 <!-- 婚纱照页：主推精修/初修（不同风格），底图弱化；入口链到我们的故事 -->
 <script setup>
+import LoveWelcomeOverlay from '~/components/LoveWelcomeOverlay.vue'
+
 definePageMeta({
   // 去掉内容区内边距，全宽沉浸展示
   contentPadding: 0,
@@ -60,6 +62,9 @@ function toggleBase() {
 
 <template>
   <div class="wedding">
+    <!-- 进入页欢迎遮罩：仅客户端 -->
+    <LoveWelcomeOverlay />
+
     <header class="wedding__hero">
       <p class="wedding__eyebrow">Wedding</p>
       <h1 class="wedding__title">我们的婚纱照</h1>
