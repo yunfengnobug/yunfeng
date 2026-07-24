@@ -1,7 +1,10 @@
 // 全局重置与工具类
 @use './variables.scss' as *;
 
-* {
+// 全局统一边框盒模型（含伪元素）
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
