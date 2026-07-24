@@ -79,6 +79,7 @@ nuxt.config.js
 - 不强制 Element Plus；前台以原生控件 + SCSS 为主
 - **包管理仅允许 pnpm**（`packageManager` + `only-allow` + `.npmrc`）
 - 婚纱照数据由 admin 后台上传到七牛并写库；本站 `GET /api/wedding-photos` 只读展示
+- 展示侧通过七牛 `imageView2` 拉缩略图 / 预览图（webp、限宽），库内仍存原图 CDN 地址，不改对象本身
 
 ## 部署（GitHub Actions + PM2）
 

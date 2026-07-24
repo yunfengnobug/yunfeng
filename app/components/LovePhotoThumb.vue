@@ -1,9 +1,9 @@
-<!-- 婚纱照缩略图：IntersectionObserver 视口懒加载；加载后写入缓存供预览复用 -->
+<!-- 婚纱照缩略图：七牛 imageView2 压缩 + 视口懒加载 -->
 <script setup>
-import { registerPhotoLoaded } from '~/utils/photoSrcCache.js'
+import { buildPhotoThumbUrl, registerPhotoLoaded } from '~/utils/photoSrcCache.js'
 
 const props = defineProps({
-  // 原图 CDN 地址（列表与预览同一 URL，便于缓存复用）
+  // 原图 CDN 地址（入库的完整链接）
   src: { type: String, required: true },
   // 无障碍文案
   alt: { type: String, default: '' },
@@ -16,10 +16,13 @@ const inView = ref(false)
 // 是否已加载完成
 const loaded = ref(false)
 
-/** 标记加载完成并登记缓存 */
+// 列表用七牛压缩图（webp + 限宽）
+const thumbSrc = computed(() => buildPhotoThumbUrl(props.src))
+
+/** 标记加载完成并登记缓存（按缩略图 URL） */
 function markLoaded() {
   loaded.value = true
-  registerPhotoLoaded(props.src, imgRef.value)
+  registerPhotoLoaded(thumbSrc.value, imgRef.value)
 }
 
 onMounted(() => {
@@ -40,7 +43,6 @@ onMounted(() => {
       }
     },
     {
-      // 提前约半屏加载，滚动更顺且仍避免首屏一次拉全量
       rootMargin: '40% 0px',
       threshold: 0.01,
     },
@@ -53,14 +55,13 @@ onMounted(() => {
 <template>
   <span ref="rootRef" class="photo-thumb" :class="{ 'is-loaded': loaded }">
     <span v-show="!loaded" class="photo-thumb__skeleton" aria-hidden="true" />
-    <!-- 仅进入视口后才设置 src，真正懒加载，未滚动到的不打 CDN -->
     <img
       v-if="inView"
       ref="imgRef"
       class="photo-thumb__img"
-      :src="src"
+      :src="thumbSrc"
       :alt="alt"
-      :data-photo-src="src"
+      :data-photo-src="thumbSrc"
       decoding="async"
       fetchpriority="low"
       @load="markLoaded"

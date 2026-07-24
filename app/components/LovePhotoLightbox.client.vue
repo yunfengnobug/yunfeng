@@ -1,6 +1,11 @@
 <!-- 婚纱照全屏预览：三轨跟手滑动切图、双指缩放；复用页面已加载图片，邻图按需加载 -->
 <script setup>
-import { isPhotoLoaded, registerPhotoLoaded, resolvePhotoSrc } from '~/utils/photoSrcCache.js'
+import {
+  buildPhotoPreviewUrl,
+  isPhotoLoaded,
+  registerPhotoLoaded,
+  resolvePhotoSrc,
+} from '~/utils/photoSrcCache.js'
 
 const props = defineProps({
   // 是否打开
@@ -55,13 +60,17 @@ const prevUrl = computed(() => props.urls[index.value - 1] || '')
 const currentUrl = computed(() => props.urls[index.value] || '')
 const nextUrl = computed(() => props.urls[index.value + 1] || '')
 
-// 展示用 src：优先内存 blob，避免重复请求 CDN
-const displayCurrent = computed(() => resolvePhotoSrc(currentUrl.value))
+// 七牛预览压缩图（限宽 webp），再走内存缓存
+const previewCurrent = computed(() => buildPhotoPreviewUrl(currentUrl.value))
+const previewPrev = computed(() => (prevUrl.value ? buildPhotoPreviewUrl(prevUrl.value) : ''))
+const previewNext = computed(() => (nextUrl.value ? buildPhotoPreviewUrl(nextUrl.value) : ''))
+
+const displayCurrent = computed(() => resolvePhotoSrc(previewCurrent.value))
 const displayPrev = computed(() =>
-  neighborsEnabled.value && prevUrl.value ? resolvePhotoSrc(prevUrl.value) : '',
+  neighborsEnabled.value && previewPrev.value ? resolvePhotoSrc(previewPrev.value) : '',
 )
 const displayNext = computed(() =>
-  neighborsEnabled.value && nextUrl.value ? resolvePhotoSrc(nextUrl.value) : '',
+  neighborsEnabled.value && previewNext.value ? resolvePhotoSrc(previewNext.value) : '',
 )
 
 const counterText = computed(() => {
@@ -75,19 +84,19 @@ const counterText = computed(() => {
 // 当前主图是否仍在加载
 const currentLoading = ref(true)
 
-/** 根据缓存同步加载态 */
+/** 根据缓存同步加载态（按预览压缩 URL） */
 function syncCurrentLoading() {
-  currentLoading.value = !isPhotoLoaded(currentUrl.value)
+  currentLoading.value = !isPhotoLoaded(previewCurrent.value)
 }
 
-watch(currentUrl, () => {
+watch(previewCurrent, () => {
   syncCurrentLoading()
 })
 
 /** 当前主图加载完成并写入缓存 */
 function onCurrentImgLoad(event) {
   currentLoading.value = false
-  registerPhotoLoaded(currentUrl.value, event?.target)
+  registerPhotoLoaded(previewCurrent.value, event?.target)
 }
 
 /** 允许加载邻图（开始横滑或键盘切图时） */
@@ -512,7 +521,7 @@ onBeforeUnmount(() => {
         <!-- 放大时：单图平移缩放 -->
         <div v-if="zoomed" class="photo-lb__zoom-layer">
           <img
-            :key="`zoom-${currentUrl}`"
+            :key="`zoom-${previewCurrent}`"
             :src="displayCurrent"
             alt="婚纱照大图"
             class="photo-lb__img"
@@ -539,7 +548,7 @@ onBeforeUnmount(() => {
           <div class="photo-lb__slide" :style="slideWidthStyle">
             <img
               v-if="displayCurrent"
-              :key="`cur-${currentUrl}`"
+              :key="`cur-${previewCurrent}`"
               :src="displayCurrent"
               alt="婚纱照大图"
               class="photo-lb__img"
