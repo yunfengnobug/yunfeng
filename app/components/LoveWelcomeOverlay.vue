@@ -1,4 +1,4 @@
-<!-- 进入「我们」页的欢迎遮罩：艺术字 → 点击后照片放大淡出 → 全屏视频 → 播完关闭 -->
+<!-- 进入「我们」页的欢迎遮罩：艺术字 → 点击后全屏视频 → 播完关闭 -->
 <template>
   <Teleport to="body">
     <div
@@ -7,7 +7,6 @@
       :class="[
         `welcome--${phase}`,
         {
-          'welcome--fade': fading,
           'welcome--ready': clickReady && phase === 'intro',
         },
       ]"
@@ -24,19 +23,7 @@
         <p class="welcome__hint">{{ clickReady ? '点击屏幕继续' : '' }}</p>
       </div>
 
-      <img
-        v-show="phase === 'burst'"
-        class="welcome__photo"
-        :class="{
-          'welcome__photo--show': phase === 'burst',
-          'welcome__photo--grow': photoGrowing,
-        }"
-        :src="PHOTO_URL"
-        alt=""
-        draggable="false"
-      />
-
-      <!-- 照片淡出后全屏视频；播完自动关闭 -->
+      <!-- 点击后全屏视频；播完自动关闭 -->
       <video
         v-show="phase === 'video'"
         ref="videoRef"
@@ -52,20 +39,13 @@
 </template>
 
 <script setup>
-import { buildPhotoPreviewUrl } from '~/utils/photoSrcCache.js'
 import { playWelcomeBgm, preloadWelcomeBgm } from '~/utils/welcomeBgm.js'
 
-// 欢迎遮罩用的精修图（原图地址）
-const PHOTO_ORIGIN = 'https://img.yzre.cn/2026/07/wedding-final/7defbbefe7394afe.jpg'
-// 七牛 imageView2 压缩展示，与全屏预览同档
-const PHOTO_URL = buildPhotoPreviewUrl(PHOTO_ORIGIN)
 // 揭幕后全屏播放的视频
 const VIDEO_URL = 'https://img.yzre.cn/2026/07/video/6a376491432b63dbaa1ff311a67504e3_raw.mp4'
 
-// intro → burst（照片）→ video（全屏）→ 结束卸载
+// intro → video（全屏）→ 结束卸载
 const phase = ref('intro')
-const fading = ref(false)
-const photoGrowing = ref(false)
 const alive = ref(true)
 // 挂载后短暂忽略点击，避免导航「我们」的残留点击穿透
 const clickReady = ref(false)
@@ -74,9 +54,6 @@ const pointerStarted = ref(false)
 const videoRef = ref(null)
 
 let readyTimer = null
-let growTimer = null
-let fadeTimer = null
-let videoTimer = null
 
 useHead({
   link: [
@@ -97,13 +74,7 @@ function lockScroll(lock) {
 // 清理定时器
 function clearTimers() {
   if (readyTimer) clearTimeout(readyTimer)
-  if (growTimer) clearTimeout(growTimer)
-  if (fadeTimer) clearTimeout(fadeTimer)
-  if (videoTimer) clearTimeout(videoTimer)
   readyTimer = null
-  growTimer = null
-  fadeTimer = null
-  videoTimer = null
 }
 
 // 关闭整层欢迎（视频结束或失败）
@@ -120,7 +91,6 @@ function onVideoEnded() {
 // 进入全屏视频并尝试播放（带声音；若被策略拦截则静音重试）
 async function startVideo() {
   phase.value = 'video'
-  fading.value = false
   await nextTick()
   const el = videoRef.value
   if (!el) {
@@ -157,39 +127,17 @@ function onOverlayPointerUp(event) {
   onContinue()
 }
 
-// 用户点击遮罩继续
+// 用户点击遮罩：开背景音乐并立刻播视频
 function onContinue() {
   if (!clickReady.value || phase.value !== 'intro') return
   playWelcomeBgm()
-  startReveal()
-}
-
-// 揭幕：婚纱图放大淡出，结束后立刻全屏播视频
-function startReveal() {
-  if (phase.value !== 'intro') return
-  phase.value = 'burst'
-
-  growTimer = setTimeout(() => {
-    photoGrowing.value = true
-  }, 120)
-
-  // 放大接近最大时，照片与遮罩一起淡出
-  fadeTimer = setTimeout(() => {
-    fading.value = true
-  }, 2800)
-
-  // 淡出结束后立刻切全屏视频（与 opacity 过渡 2.6s 对齐）
-  videoTimer = setTimeout(() => {
-    startVideo()
-  }, 5600)
+  startVideo()
 }
 
 onMounted(() => {
   lockScroll(true)
-  const img = new Image()
-  img.src = PHOTO_URL
   preloadWelcomeBgm()
-  // 预加载视频，揭幕后更快起播
+  // 预加载视频，点击后更快起播
   const preloadVideo = document.createElement('video')
   preloadVideo.preload = 'auto'
   preloadVideo.src = VIDEO_URL
@@ -221,23 +169,13 @@ onBeforeUnmount(() => {
   cursor: default;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  opacity: 1;
-  transition: opacity 2.6s ease;
   background: #000;
 
   &--ready {
     cursor: pointer;
   }
 
-  &--fade {
-    opacity: 0;
-    pointer-events: none;
-  }
-
   &--video {
-    // 照片淡出后立刻亮起视频，不再走淡入过渡
-    opacity: 1;
-    transition: none;
     pointer-events: auto;
     cursor: default;
   }
@@ -285,36 +223,6 @@ onBeforeUnmount(() => {
     animation: welcome-hint-pulse 2s ease-in-out infinite;
   }
 
-  &__photo {
-    position: absolute;
-    z-index: 3;
-    top: 50%;
-    left: 50%;
-    width: min(62vw, 360px);
-    height: auto;
-    aspect-ratio: 3 / 4;
-    object-fit: cover;
-    border-radius: 6px;
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
-    transform: translate(-50%, -50%) scale(0.72);
-    opacity: 0;
-    pointer-events: none;
-    visibility: hidden;
-    transition:
-      transform 3s linear,
-      opacity 0.45s ease;
-
-    &--show {
-      opacity: 1;
-      visibility: visible;
-    }
-
-    &--grow {
-      /* 放大到接近全屏，淡出由外层 fade 状态控制 */
-      transform: translate(-50%, -50%) scale(4.6);
-    }
-  }
-
   &__video {
     position: absolute;
     inset: 0;
@@ -357,14 +265,6 @@ onBeforeUnmount(() => {
   .welcome__title,
   .welcome__hint {
     animation: none;
-  }
-
-  .welcome__photo {
-    transition-duration: 0.8s;
-  }
-
-  .welcome {
-    transition-duration: 0.8s;
   }
 }
 </style>
