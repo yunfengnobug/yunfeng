@@ -12,6 +12,9 @@ useSeoMeta({
   description: '王俊杰与李朝新的婚纱照',
 })
 
+// 离开「我们」板块时停止欢迎背景音乐
+useStopWelcomeBgmOnLeave()
+
 // SSR 拉取三类照片；失败时给空数组，避免页面崩溃
 const { data: photoData, pending: photosPending } = await useAsyncData(
   'wedding-photos',

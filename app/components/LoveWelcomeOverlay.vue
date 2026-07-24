@@ -1,4 +1,4 @@
-<!-- 进入「我们」页的欢迎遮罩：艺术字晃动 → 点击遮罩后婚纱图放大淡出 -->
+<!-- 进入「我们」页的欢迎遮罩：艺术字 → 点击后照片放大淡出 → 全屏视频 → 播完关闭 -->
 <template>
   <Teleport to="body">
     <div
@@ -17,7 +17,7 @@
       @pointerdown.prevent="onOverlayPointerDown"
       @pointerup.prevent="onOverlayPointerUp"
     >
-      <div class="welcome__veil" />
+      <div v-show="phase !== 'video'" class="welcome__veil" />
 
       <div v-show="phase === 'intro'" class="welcome__copy">
         <p class="welcome__title">我们结婚吧！</p>
@@ -25,6 +25,7 @@
       </div>
 
       <img
+        v-show="phase === 'burst'"
         class="welcome__photo"
         :class="{
           'welcome__photo--show': phase === 'burst',
@@ -34,19 +35,34 @@
         alt=""
         draggable="false"
       />
+
+      <!-- 照片淡出后全屏视频；播完自动关闭 -->
+      <video
+        v-show="phase === 'video'"
+        ref="videoRef"
+        class="welcome__video"
+        :src="VIDEO_URL"
+        playsinline
+        preload="auto"
+        @ended="onVideoEnded"
+        @error="onVideoEnded"
+      />
     </div>
   </Teleport>
 </template>
 
 <script setup>
 import { buildPhotoPreviewUrl } from '~/utils/photoSrcCache.js'
+import { playWelcomeBgm, preloadWelcomeBgm } from '~/utils/welcomeBgm.js'
 
 // 欢迎遮罩用的精修图（原图地址）
 const PHOTO_ORIGIN = 'https://img.yzre.cn/2026/07/wedding-final/7defbbefe7394afe.jpg'
 // 七牛 imageView2 压缩展示，与全屏预览同档
 const PHOTO_URL = buildPhotoPreviewUrl(PHOTO_ORIGIN)
+// 揭幕后全屏播放的视频
+const VIDEO_URL = 'https://img.yzre.cn/2026/07/video/6a376491432b63dbaa1ff311a67504e3_raw.mp4'
 
-// intro：等待点击遮罩；burst：图片放大后与遮罩淡出
+// intro → burst（照片）→ video（全屏）→ 结束卸载
 const phase = ref('intro')
 const fading = ref(false)
 const photoGrowing = ref(false)
@@ -55,16 +71,12 @@ const alive = ref(true)
 const clickReady = ref(false)
 // 必须在就绪后于遮罩上按下再抬起，才算有效点击
 const pointerStarted = ref(false)
+const videoRef = ref(null)
 
 let readyTimer = null
 let growTimer = null
 let fadeTimer = null
-let doneTimer = null
-
-// 背景音乐（模块级引用，遮罩卸载后仍继续播放）
-let welcomeBgm = null
-// public/marry[mqms2].ogg；方括号需编码
-const BGM_SRC = encodeURI('/marry[mqms2].ogg')
+let videoTimer = null
 
 useHead({
   link: [
@@ -87,23 +99,47 @@ function clearTimers() {
   if (readyTimer) clearTimeout(readyTimer)
   if (growTimer) clearTimeout(growTimer)
   if (fadeTimer) clearTimeout(fadeTimer)
-  if (doneTimer) clearTimeout(doneTimer)
+  if (videoTimer) clearTimeout(videoTimer)
   readyTimer = null
   growTimer = null
   fadeTimer = null
-  doneTimer = null
+  videoTimer = null
 }
 
-// 点击时播放背景音乐（需用户手势，满足浏览器自动播放策略）
-function playWelcomeBgm() {
-  if (!import.meta.client) return
-  if (!welcomeBgm) {
-    welcomeBgm = new Audio(BGM_SRC)
-    welcomeBgm.loop = true
-    // 背景音量，避免盖过人声/操作
-    welcomeBgm.volume = 0.65
+// 关闭整层欢迎（视频结束或失败）
+function closeWelcome() {
+  alive.value = false
+  lockScroll(false)
+}
+
+// 视频播完或出错后消失
+function onVideoEnded() {
+  closeWelcome()
+}
+
+// 进入全屏视频并尝试播放（带声音；若被策略拦截则静音重试）
+async function startVideo() {
+  phase.value = 'video'
+  fading.value = false
+  await nextTick()
+  const el = videoRef.value
+  if (!el) {
+    closeWelcome()
+    return
   }
-  welcomeBgm.play().catch(() => {})
+  el.currentTime = 0
+  el.muted = false
+  try {
+    await el.play()
+  } catch {
+    // 延迟播放可能被拦截：静音后再播，保证能看完
+    el.muted = true
+    try {
+      await el.play()
+    } catch {
+      closeWelcome()
+    }
+  }
 }
 
 // 遮罩按下：就绪后才记有效起点
@@ -128,7 +164,7 @@ function onContinue() {
   startReveal()
 }
 
-// 揭幕：文案消失，婚纱图放大，再与遮罩一起淡出
+// 揭幕：婚纱图放大淡出，结束后立刻全屏播视频
 function startReveal() {
   if (phase.value !== 'intro') return
   phase.value = 'burst'
@@ -137,13 +173,14 @@ function startReveal() {
     photoGrowing.value = true
   }, 120)
 
+  // 放大接近最大时，照片与遮罩一起淡出
   fadeTimer = setTimeout(() => {
     fading.value = true
   }, 2800)
 
-  doneTimer = setTimeout(() => {
-    alive.value = false
-    lockScroll(false)
+  // 淡出结束后立刻切全屏视频（与 opacity 过渡 2.6s 对齐）
+  videoTimer = setTimeout(() => {
+    startVideo()
   }, 5600)
 }
 
@@ -151,10 +188,11 @@ onMounted(() => {
   lockScroll(true)
   const img = new Image()
   img.src = PHOTO_URL
-  // 预加载背景音乐，点击后更快起播
-  const preloadAudio = new Audio()
-  preloadAudio.preload = 'auto'
-  preloadAudio.src = BGM_SRC
+  preloadWelcomeBgm()
+  // 预加载视频，揭幕后更快起播
+  const preloadVideo = document.createElement('video')
+  preloadVideo.preload = 'auto'
+  preloadVideo.src = VIDEO_URL
   // 导航残留点击通常在数百毫秒内；延后接受点击
   readyTimer = setTimeout(() => {
     clickReady.value = true
@@ -163,6 +201,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   clearTimers()
+  const el = videoRef.value
+  if (el) {
+    el.pause()
+  }
   lockScroll(false)
 })
 </script>
@@ -181,6 +223,7 @@ onBeforeUnmount(() => {
   -webkit-tap-highlight-color: transparent;
   opacity: 1;
   transition: opacity 2.6s ease;
+  background: #000;
 
   &--ready {
     cursor: pointer;
@@ -189,6 +232,14 @@ onBeforeUnmount(() => {
   &--fade {
     opacity: 0;
     pointer-events: none;
+  }
+
+  &--video {
+    // 照片淡出后立刻亮起视频，不再走淡入过渡
+    opacity: 1;
+    transition: none;
+    pointer-events: auto;
+    cursor: default;
   }
 
   &__veil {
@@ -262,6 +313,17 @@ onBeforeUnmount(() => {
       /* 放大到接近全屏，淡出由外层 fade 状态控制 */
       transform: translate(-50%, -50%) scale(4.6);
     }
+  }
+
+  &__video {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+    pointer-events: none;
   }
 }
 

@@ -112,6 +112,9 @@ useSeoMeta({
   description: '王俊杰与李朝新的纪念页',
 })
 
+// 离开「我们」板块时停止欢迎背景音乐
+useStopWelcomeBgmOnLeave()
+
 const titleChars = '李朝新，我爱你'.split('')
 
 // 在一起起始日（UTC），保证 SSR/CSR 同一天计算结果一致
