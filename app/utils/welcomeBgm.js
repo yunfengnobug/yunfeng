@@ -5,8 +5,8 @@
 /** @type {HTMLAudioElement | null} */
 let welcomeBgm = null
 
-// public/marry[mqms2].ogg；方括号需编码
-const BGM_SRC = encodeURI('/marry[mqms2].ogg')
+// 七牛 CDN 背景音乐
+const BGM_SRC = 'https://img.yzre.cn/2026/07/video/marry.ogg'
 
 // 预加载，点击后更快起播
 export function preloadWelcomeBgm() {
