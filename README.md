@@ -61,6 +61,8 @@ pnpm lint           # oxlint
 
 ```
 app/           # Nuxt 应用（页面、布局、组件、样式）
+app/composables/  # 如灯箱轨道 / 手势
+app/utils/     # 含 love-story-content、欢迎字体说明等
 public/fonts/  # 欢迎层艺术字子集（Ma Shan Zheng，OFL，不请求 Google Fonts）
 server/api/    # Nitro API（含公开婚纱照列表）
 server/utils/  # db 连接池等
