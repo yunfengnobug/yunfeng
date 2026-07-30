@@ -65,6 +65,7 @@ pnpm lint           # oxlint
 
 ```
 app/           # Nuxt 应用（页面、布局、组件、样式）
+public/fonts/  # 欢迎层艺术字子集（Ma Shan Zheng，OFL，不请求 Google Fonts）
 server/api/    # Nitro API（含公开婚纱照列表）
 server/utils/  # db 连接池等
 nuxt.config.js
@@ -78,6 +79,7 @@ nuxt.config.js
 - **包管理仅允许 pnpm**（`packageManager` + `only-allow` + `.npmrc`）
 - 婚纱照数据由 admin 后台上传到七牛并写库；本站 `GET /api/wedding-photos` 只读展示
 - 展示侧通过七牛 `imageView2` 拉缩略图 / 预览图（webp、限宽），库内仍存原图 CDN 地址，不改对象本身；已加载标记有 LRU 上限，离开婚纱照页会清空，不另建 blob 内存缓存
+- `/love` 欢迎层艺术字用 `public/fonts/` 本地子集字体（约 3KB），不请求 Google Fonts
 
 ## 部署（GitHub Actions + PM2）
 

@@ -19,15 +19,6 @@ const videoSrcReady = ref(false)
 
 let readyTimer = null
 
-useHead({
-  link: [
-    {
-      rel: 'stylesheet',
-      href: 'https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap',
-    },
-  ],
-})
-
 // 遮罩期间锁定滚动
 function lockScroll(lock) {
   if (!import.meta.client) return
@@ -163,6 +154,17 @@ onBeforeUnmount(() => {
   </Teleport>
 </template>
 
+<style lang="scss">
+/* 欢迎标题艺术字：本地子集 woff2，避免 Google Fonts 外链阻塞首屏（不进 scoped，以免 @font-face 异常） */
+@font-face {
+  font-family: 'Ma Shan Zheng Welcome';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/ma-shan-zheng-welcome.woff2') format('woff2');
+}
+</style>
+
 <style lang="scss" scoped>
 .welcome {
   position: fixed;
@@ -206,7 +208,7 @@ onBeforeUnmount(() => {
 
   &__title {
     margin: 0;
-    font-family: 'Ma Shan Zheng', 'STKaiti', 'KaiTi', 'Songti SC', serif;
+    font-family: 'Ma Shan Zheng Welcome', 'STKaiti', 'KaiTi', 'Songti SC', serif;
     font-size: clamp(2.8rem, 12vw, 5.5rem);
     font-weight: 400;
     letter-spacing: 0.12em;
