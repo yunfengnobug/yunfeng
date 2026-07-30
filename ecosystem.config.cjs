@@ -1,6 +1,6 @@
 /**
  * PM2 进程配置（CommonJS，避免与 package.json type:module 冲突）
- * 端口固定 3001；监听 0.0.0.0 便于 Nginx 反代
+ * 端口固定 3001；仅监听 127.0.0.1，由本机 nginx 反代（不对外网暴露）
  */
 const fs = require('fs')
 const path = require('path')
@@ -55,12 +55,13 @@ module.exports = {
         // Nuxt/Nitro 端口（固定）
         PORT: 3001,
         NITRO_PORT: 3001,
-        HOST: '0.0.0.0',
-        NITRO_HOST: '0.0.0.0',
         // 运行时密钥：NotifyX / DB_* 等，由 Actions 写入 .runtime.env 后整表注入
         ...runtimeEnv,
         // 强制上海时区（放在 runtimeEnv 之后，避免被覆盖）
         TZ: 'Asia/Shanghai',
+        // 仅本机可连；外网须经 NPM → 内层 nginx，不依赖防火墙单独挡 3001
+        HOST: '127.0.0.1',
+        NITRO_HOST: '127.0.0.1',
       },
       error_file: './logs/err.log',
       out_file: './logs/out.log',

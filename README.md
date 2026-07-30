@@ -147,4 +147,4 @@ NOTIFYX_KEY=你的NotifyX密钥
 1. 已安装 Node.js 20+、**PM2**（运行时只需同步后的 `server/` + `public/`，不必在服务器再装项目依赖）
 2. 部署用户对 `/server/yunfeng` 有写权限，且能执行 `pm2`
 3. 首次可手动：`mkdir -p /server/yunfeng`，等 Actions 推完后再确认 `pm2 list` 中有 `yunfeng`
-4. Nginx（或其它网关）反代到 `127.0.0.1:3001`
+4. Nginx（或其它网关）反代到 `127.0.0.1:3001`（应用仅监听本机，不对外网暴露 3001）
