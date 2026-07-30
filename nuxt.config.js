@@ -3,7 +3,8 @@ export default defineNuxtConfig({
   // 兼容性日期，控制行为切换时间点
   compatibilityDate: '2025-07-15',
   // 开发工具，生产构建可关闭
-  devtools: { enabled: true },
+  // 仅开发环境启用 DevTools，避免生产暴露调试信息与多余资源
+  devtools: { enabled: process.env.NODE_ENV !== 'production' },
   // 禁用 TypeScript 检查，项目约定纯 JS
   typescript: {
     typeCheck: false,
