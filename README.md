@@ -18,8 +18,6 @@
 | `/about`      | 关于                                |
 | `/love`       | 婚纱照（精修 / 初修；底图弱化入口） |
 | `/love/story` | 我们的故事（原爱情纪念页）          |
-| `/notes`      | 随笔列表                            |
-| `/notes/:id`  | 随笔详情                            |
 | `/changelog`  | 更新日志                            |
 
 ## 环境要求
@@ -68,7 +66,6 @@ pnpm lint           # oxlint
 app/           # Nuxt 应用（页面、布局、组件、样式）
 server/api/    # Nitro API（含公开婚纱照列表）
 server/utils/  # db 连接池等
-shared/        # 前后端可共享数据（可选）
 nuxt.config.js
 ```
 
