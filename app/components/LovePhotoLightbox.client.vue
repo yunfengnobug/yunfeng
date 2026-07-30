@@ -53,6 +53,8 @@ let lastMoveT = 0
 let velocityX = 0
 /** 防止 settle 回调重复执行 */
 let settleToken = 0
+/** settleTo 的 setTimeout id，卸载时需清理 */
+let settleTimer = null
 /** 轴锁定：待定 / 横 / 纵 */
 let axis = /** @type {'pending' | 'x' | 'y'} */ ('pending')
 
@@ -180,12 +182,17 @@ function commitIndex(nextIndex) {
  */
 function settleTo(targetX, nextIndex) {
   const token = ++settleToken
+  if (settleTimer != null) {
+    window.clearTimeout(settleTimer)
+    settleTimer = null
+  }
   settling.value = true
   gesturing.value = false
   dragX.value = targetX
   closeY.value = 0
 
   const finish = () => {
+    settleTimer = null
     if (token !== settleToken) {
       return
     }
@@ -197,7 +204,7 @@ function settleTo(targetX, nextIndex) {
     commitIndex(nextIndex)
   }
 
-  window.setTimeout(finish, 300)
+  settleTimer = window.setTimeout(finish, 300)
 }
 
 /**
@@ -479,6 +486,12 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  // 取消未完成的 settle 定时器，并作废回调
+  if (settleTimer != null) {
+    window.clearTimeout(settleTimer)
+    settleTimer = null
+  }
+  settleToken += 1
   window.removeEventListener('keydown', onKeydown)
   window.removeEventListener('resize', onResize)
   if (import.meta.client) {
