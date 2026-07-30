@@ -29,11 +29,12 @@
 
 本地复制 `.env.example` 为 `.env`（已 gitignore，勿提交）：
 
-| 变量                                  | 说明                                      |
-| ------------------------------------- | ----------------------------------------- |
-| `DB_HOST` / `DB_PORT`                 | MySQL（与 admin 同库，只读）              |
-| `DB_USER` / `DB_PASSWORD` / `DB_NAME` | 同上                                      |
-| `NOTIFYX_KEY`                         | NotifyX 密钥（亦可用 `NUXT_NOTIFYX_KEY`） |
+| 变量                                  | 说明                                          |
+| ------------------------------------- | --------------------------------------------- |
+| `TZ`                                  | 时区，固定 `Asia/Shanghai`（生产由 PM2 强制） |
+| `DB_HOST` / `DB_PORT`                 | MySQL（与 admin 同库，只读）                  |
+| `DB_USER` / `DB_PASSWORD` / `DB_NAME` | 同上                                          |
+| `NOTIFYX_KEY`                         | NotifyX 密钥（亦可用 `NUXT_NOTIFYX_KEY`）     |
 
 建表由 **admin** 启动时自动完成；yunfeng 不跑建表。
 

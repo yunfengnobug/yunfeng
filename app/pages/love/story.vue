@@ -117,13 +117,12 @@ useStopWelcomeBgmOnLeave()
 
 const titleChars = '李朝新，我爱你'.split('')
 
-// 在一起起始日（UTC），保证 SSR/CSR 同一天计算结果一致
-const START_UTC = Date.UTC(2025, 5, 20)
+// 在一起起始日（上海日历日），SSR/CSR 统一按 Asia/Shanghai 取整算天数
+const START_DATE_KEY = '2025-06-20'
 
-// 计算已在一起的天数
+// 计算已在一起的天数（上海时区日历差，与进程本地时区无关）
 function calcDaysCount() {
-  const diff = Date.now() - START_UTC
-  return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)))
+  return calendarDaysSinceShanghai(START_DATE_KEY)
 }
 
 const daysCount = ref(calcDaysCount())

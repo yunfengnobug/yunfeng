@@ -42,8 +42,8 @@
 
 const route = useRoute()
 
-// 页脚年份（SSR/CSR 同年份一致，跨年瞬间差异可忽略）
-const currentYear = new Date().getFullYear()
+// 页脚年份（固定 Asia/Shanghai，SSR/CSR 一致）
+const currentYear = getShanghaiYear()
 
 // 内容区 padding；页面可通过 definePageMeta({ contentPadding }) 覆盖
 const contentPadding = computed(() => {

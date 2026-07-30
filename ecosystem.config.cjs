@@ -59,6 +59,8 @@ module.exports = {
         NITRO_HOST: '0.0.0.0',
         // 运行时密钥：NotifyX / DB_* 等，由 Actions 写入 .runtime.env 后整表注入
         ...runtimeEnv,
+        // 强制上海时区（放在 runtimeEnv 之后，避免被覆盖）
+        TZ: 'Asia/Shanghai',
       },
       error_file: './logs/err.log',
       out_file: './logs/out.log',
