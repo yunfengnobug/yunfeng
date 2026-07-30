@@ -19,7 +19,7 @@ const loaded = ref(false)
 // 列表用七牛压缩图（webp + 限宽）
 const thumbSrc = computed(() => buildPhotoThumbUrl(props.src))
 
-/** 标记加载完成并登记缓存（按缩略图 URL） */
+/** 标记加载完成（按缩略图 URL 记标记，便于灯箱跳过 loading） */
 function markLoaded() {
   loaded.value = true
   registerPhotoLoaded(thumbSrc.value, imgRef.value)

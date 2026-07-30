@@ -1,13 +1,14 @@
 /**
- * 婚纱照 CDN 地址处理：七牛 imageView2 压缩 + 已加载缓存
+ * 婚纱照 CDN 地址处理：七牛 imageView2 压缩 + 已加载标记（无 blob 内存缓存）
  * 文档：https://developer.qiniu.com/dora/1279/basic-processing-images-imageview2
+ * 图片复用依赖浏览器 / CDN HTTP 缓存，避免 createObjectURL 长期占内存
  */
 
-/** @type {Map<string, string>} 展示 URL → blob 或自身 */
-const srcCache = new Map()
+/** 已加载标记 LRU 上限（仅存 URL 字符串，体积很小） */
+const LOADED_MAX = 120
 
-/** @type {Set<string>} 已加载完成的展示 URL */
-const loadedSet = new Set()
+/** @type {Map<string, true>} 展示 URL → 已加载（Map 保序便于 LRU） */
+const loadedMap = new Map()
 
 /**
  * 规范化缓存 key
@@ -17,6 +18,28 @@ function normalizeKey(url) {
   return String(url || '')
     .trim()
     .replace(/#.*$/, '')
+}
+
+/**
+ * LRU：写入已加载标记，超出上限淘汰最旧项
+ * @param {string} key
+ */
+function touchLoaded(key) {
+  if (loadedMap.has(key)) {
+    loadedMap.delete(key)
+  }
+  loadedMap.set(key, true)
+  while (loadedMap.size > LOADED_MAX) {
+    const oldest = loadedMap.keys().next().value
+    loadedMap.delete(oldest)
+  }
+}
+
+/**
+ * 清空已加载标记（离开婚纱照页时调用）
+ */
+export function clearPhotoSrcCache() {
+  loadedMap.clear()
 }
 
 /**
@@ -93,7 +116,7 @@ export function buildPhotoAdminThumbUrl(url) {
 }
 
 /**
- * 该展示地址是否已加载过
+ * 该展示地址是否已加载过（用于灯箱跳过 loading）
  * @param {string} url 一般为处理后的 preview/thumb URL
  */
 export function isPhotoLoaded(url) {
@@ -101,7 +124,9 @@ export function isPhotoLoaded(url) {
   if (!key) {
     return false
   }
-  if (loadedSet.has(key) || srcCache.has(key)) {
+  if (loadedMap.has(key)) {
+    // 命中则挪到最新，保持 LRU 新鲜度
+    touchLoaded(key)
     return true
   }
   if (!import.meta.client) {
@@ -114,7 +139,7 @@ export function isPhotoLoaded(url) {
         continue
       }
       if (node.complete && node.naturalWidth > 0) {
-        loadedSet.add(key)
+        touchLoaded(key)
         return true
       }
     }
@@ -125,62 +150,22 @@ export function isPhotoLoaded(url) {
 }
 
 /**
- * 登记已加载完成的展示图
+ * 登记已加载完成的展示图（只记标记，不复制为 blob）
  * @param {string} url
- * @param {HTMLImageElement} [img]
+ * @param {HTMLImageElement} [_img] 保留参数兼容旧调用
  */
-export function registerPhotoLoaded(url, img) {
+export function registerPhotoLoaded(url, _img) {
   const key = normalizeKey(url)
   if (!key) {
     return
   }
-  loadedSet.add(key)
-  if (!srcCache.has(key)) {
-    srcCache.set(key, key)
-  }
-  if (!import.meta.client || !img?.naturalWidth) {
-    return
-  }
-  const existing = srcCache.get(key)
-  if (existing && existing.startsWith('blob:')) {
-    return
-  }
-  try {
-    const canvas = document.createElement('canvas')
-    canvas.width = img.naturalWidth
-    canvas.height = img.naturalHeight
-    const ctx = canvas.getContext('2d')
-    if (!ctx) {
-      return
-    }
-    ctx.drawImage(img, 0, 0)
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) {
-          return
-        }
-        const prev = srcCache.get(key)
-        if (prev && prev.startsWith('blob:')) {
-          URL.revokeObjectURL(prev)
-        }
-        srcCache.set(key, URL.createObjectURL(blob))
-      },
-      'image/webp',
-      0.85,
-    )
-  } catch {
-    // 跨域时忽略，靠 HTTP 缓存
-  }
+  touchLoaded(key)
 }
 
 /**
- * 解析展示 src：优先内存 blob
+ * 解析展示 src：直接返回 CDN 处理地址（依赖 HTTP 缓存）
  * @param {string} url
  */
 export function resolvePhotoSrc(url) {
-  const key = normalizeKey(url)
-  if (!key) {
-    return ''
-  }
-  return srcCache.get(key) || key
+  return normalizeKey(url)
 }

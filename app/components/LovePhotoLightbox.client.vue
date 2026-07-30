@@ -60,7 +60,7 @@ const prevUrl = computed(() => props.urls[index.value - 1] || '')
 const currentUrl = computed(() => props.urls[index.value] || '')
 const nextUrl = computed(() => props.urls[index.value + 1] || '')
 
-// 七牛预览压缩图（限宽 webp），再走内存缓存
+// 七牛预览压缩图（限宽 webp）；复用依赖浏览器 HTTP 缓存
 const previewCurrent = computed(() => buildPhotoPreviewUrl(currentUrl.value))
 const previewPrev = computed(() => (prevUrl.value ? buildPhotoPreviewUrl(prevUrl.value) : ''))
 const previewNext = computed(() => (nextUrl.value ? buildPhotoPreviewUrl(nextUrl.value) : ''))
@@ -93,7 +93,7 @@ watch(previewCurrent, () => {
   syncCurrentLoading()
 })
 
-/** 当前主图加载完成并写入缓存 */
+/** 当前主图加载完成 */
 function onCurrentImgLoad(event) {
   currentLoading.value = false
   registerPhotoLoaded(previewCurrent.value, event?.target)

@@ -59,6 +59,11 @@ function openLightbox(list, index) {
 function toggleBase() {
   baseOpen.value = !baseOpen.value
 }
+
+onBeforeUnmount(() => {
+  // 离开页时清掉已加载标记，避免跨次进入无限堆积
+  clearPhotoSrcCache()
+})
 </script>
 
 <template>
