@@ -1,7 +1,5 @@
 <!-- 婚纱照页：主推精修/初修（不同风格），底图弱化；入口链到我们的故事 -->
 <script setup>
-import LoveWelcomeOverlay from '~/components/LoveWelcomeOverlay.vue'
-
 definePageMeta({
   // 去掉内容区内边距，全宽沉浸展示
   contentPadding: 0,
@@ -65,8 +63,13 @@ function toggleBase() {
 
 <template>
   <div class="wedding">
-    <!-- 进入页欢迎遮罩：仅客户端 -->
-    <LoveWelcomeOverlay />
+    <!-- 欢迎遮罩：.client + ClientOnly；SSR 仅黑底占位，不含 video -->
+    <ClientOnly>
+      <LoveWelcomeOverlay />
+      <template #fallback>
+        <div class="wedding__welcome-ssr" aria-hidden="true" />
+      </template>
+    </ClientOnly>
 
     <header class="wedding__hero">
       <p class="wedding__eyebrow">Wedding</p>
@@ -165,6 +168,14 @@ function toggleBase() {
     linear-gradient(180deg, #faf7f5 0%, #f3ebe6 40%, #efe6df 100%);
   color: #3d342f;
   padding-bottom: 4rem;
+
+  // SSR/水合前占位：全屏黑底，不含 video，避免闪出正文
+  &__welcome-ssr {
+    position: fixed;
+    inset: 0;
+    z-index: 90000;
+    background: #000;
+  }
 
   &__hero {
     text-align: center;

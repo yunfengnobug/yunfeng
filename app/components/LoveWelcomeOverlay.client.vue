@@ -1,4 +1,4 @@
-<!-- 进入「我们」页的欢迎遮罩：艺术字 → 点击后全屏视频 → 播完关闭 -->
+<!-- 进入「我们」页的欢迎遮罩：艺术字 → 点击后全屏视频 → 播完关闭（仅客户端） -->
 <template>
   <Teleport to="body">
     <div
@@ -23,14 +23,13 @@
         <p class="welcome__hint">{{ clickReady ? '点击屏幕继续' : '' }}</p>
       </div>
 
-      <!-- 点击后全屏视频；播完自动关闭 -->
+      <!-- 点击后再挂 src；preload=none 避免进页就拉 MP4 -->
       <video
         v-show="phase === 'video'"
         ref="videoRef"
         class="welcome__video"
-        :src="VIDEO_URL"
         playsinline
-        preload="auto"
+        preload="none"
         @ended="onVideoEnded"
         @error="onVideoEnded"
       />
@@ -52,6 +51,8 @@ const clickReady = ref(false)
 // 必须在就绪后于遮罩上按下再抬起，才算有效点击
 const pointerStarted = ref(false)
 const videoRef = ref(null)
+// 是否已给 video 挂过 src（只在用户点击后挂载）
+const videoSrcReady = ref(false)
 
 let readyTimer = null
 
@@ -97,6 +98,12 @@ async function startVideo() {
     closeWelcome()
     return
   }
+  // 用户点击后再设 src 并 load，避免进 /love 就下载大体积 MP4
+  if (!videoSrcReady.value) {
+    el.src = VIDEO_URL
+    el.load()
+    videoSrcReady.value = true
+  }
   el.currentTime = 0
   el.muted = false
   try {
@@ -137,10 +144,6 @@ function onContinue() {
 onMounted(() => {
   lockScroll(true)
   preloadWelcomeBgm()
-  // 预加载视频，点击后更快起播
-  const preloadVideo = document.createElement('video')
-  preloadVideo.preload = 'auto'
-  preloadVideo.src = VIDEO_URL
   // 导航残留点击通常在数百毫秒内；延后接受点击
   readyTimer = setTimeout(() => {
     clickReady.value = true
@@ -152,6 +155,8 @@ onBeforeUnmount(() => {
   const el = videoRef.value
   if (el) {
     el.pause()
+    el.removeAttribute('src')
+    el.load()
   }
   lockScroll(false)
 })
