@@ -1,5 +1,5 @@
 ---
-description: Vue 3 组件、composables、Pinia 与 SCSS（Nuxt 4 app/）
+description: Vue 3 组件、composables 与 SCSS（Nuxt 4 app/；Pinia 可选）
 globs: app/components/**/*.vue,app/composables/**/*.js,app/stores/**/*.js,app/utils/**/*.js,app/assets/**/*.scss
 alwaysApply: false
 ---
@@ -46,7 +46,9 @@ const emit = defineEmits(['refresh'])
 </style>
 ```
 
-## Composables / Pinia
+## Composables / Pinia（可选）
+
+跨页状态优先 composable；确需全局 store 时再安装 `@pinia/nuxt` 与 `pinia`。
 
 ```js
 // 用户列表：加载状态与拉取方法
@@ -62,7 +64,7 @@ export function useUserList() {
 ```
 
 ```js
-// 登录态：token、用户信息与退出
+// （接入 Pinia 后）登录态：token、用户信息与退出
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(null)
   const user = ref(null)

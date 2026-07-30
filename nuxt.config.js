@@ -9,7 +9,6 @@ export default defineNuxtConfig({
   typescript: {
     typeCheck: false,
   },
-  modules: ['@pinia/nuxt'],
   css: ['~/assets/styles/base.scss'],
   app: {
     head: {

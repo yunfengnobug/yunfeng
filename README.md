@@ -4,7 +4,7 @@
 
 ## 技术栈
 
-- Vue 3 + Nuxt 4 + Pinia
+- Vue 3 + Nuxt 4
 - SCSS（scoped + 全局样式）
 - MySQL（只读婚纱照元数据，与 admin 同库）
 - pnpm 10
@@ -45,11 +45,7 @@ pnpm install
 pnpm dev
 ```
 
-局域网访问：
-
-```bash
-pnpm dev --host
-```
+`pnpm dev` 已含 `--host`，局域网可直接访问。
 
 ## 常用脚本
 
