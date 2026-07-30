@@ -25,6 +25,7 @@ alwaysApply: true
 - 需要鉴权的后台页显式声明中间件；公开页不要误挂鉴权
 - 标识符英文；注释简体中文（见下）
 - 布局与交互默认考虑窄屏；数据获取优先可 SSR 的 `useAsyncData` / `useFetch`
+- **SFC 块顺序**：文件头注释 → `<script setup>` → `<template>` → `<style>`（有 script 时必须在 template 之前）
 - **改动后复检**：涉及页面/组件/数据获取时，收尾前按 `post-change-hydration-check` 规则检查水合与 SSR 问题
 - **README 同步**：若改动影响安装、启动、脚本、环境变量、目录结构、功能说明等，须在同一轮任务中更新 `README.md`（没有则新建）；纯内部重构且不影响使用则可不改
 

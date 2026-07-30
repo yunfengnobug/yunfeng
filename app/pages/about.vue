@@ -1,3 +1,11 @@
+<script setup>
+// 关于页：作者、爱情、网站与在线建议反馈
+
+useSeoMeta({
+  description: '关于我们、爱情、本站与建议反馈',
+})
+</script>
+
 <template>
   <div class="about-page">
     <header class="page-header">
@@ -55,14 +63,6 @@
     </section>
   </div>
 </template>
-
-<script setup>
-// 关于页：作者、爱情、网站与在线建议反馈
-
-useSeoMeta({
-  description: '关于我们、爱情、本站与建议反馈',
-})
-</script>
 
 <style lang="scss" scoped>
 .page-header {

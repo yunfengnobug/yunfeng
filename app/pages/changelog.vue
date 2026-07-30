@@ -1,33 +1,3 @@
-<template>
-  <div class="changelog-page">
-    <header class="page-header">
-      <h1>更新日志</h1>
-      <p class="introduction">记录网站成长的点滴历程</p>
-    </header>
-
-    <div v-if="sortedLogs.length === 0" class="empty-state">暂无更新日志</div>
-
-    <div v-else class="timeline-list">
-      <article v-for="log in sortedLogs" :key="log.id" class="changelog-card">
-        <header class="card-header">
-          <span class="tag" :class="`tag--${log.status}`">{{ log.version }}</span>
-          <time class="release-date" :datetime="log.date">{{ log.date }}</time>
-          <span class="tag tag--status" :class="`tag--${log.status}`">{{ log.status }}</span>
-        </header>
-        <h2 class="card-title">{{ log.title }}</h2>
-        <ul class="change-list">
-          <li v-for="(item, itemIndex) in log.items" :key="itemIndex">
-            {{ item }}
-          </li>
-        </ul>
-        <footer v-if="log.creator_name" class="creator-info">
-          <span>发布者: {{ log.creator_name }}</span>
-        </footer>
-      </article>
-    </div>
-  </div>
-</template>
-
 <script setup>
 // 更新日志页：本地静态数据时间线
 
@@ -79,6 +49,36 @@ const sortedLogs = computed(() =>
   [...changelogData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
 )
 </script>
+
+<template>
+  <div class="changelog-page">
+    <header class="page-header">
+      <h1>更新日志</h1>
+      <p class="introduction">记录网站成长的点滴历程</p>
+    </header>
+
+    <div v-if="sortedLogs.length === 0" class="empty-state">暂无更新日志</div>
+
+    <div v-else class="timeline-list">
+      <article v-for="log in sortedLogs" :key="log.id" class="changelog-card">
+        <header class="card-header">
+          <span class="tag" :class="`tag--${log.status}`">{{ log.version }}</span>
+          <time class="release-date" :datetime="log.date">{{ log.date }}</time>
+          <span class="tag tag--status" :class="`tag--${log.status}`">{{ log.status }}</span>
+        </header>
+        <h2 class="card-title">{{ log.title }}</h2>
+        <ul class="change-list">
+          <li v-for="(item, itemIndex) in log.items" :key="itemIndex">
+            {{ item }}
+          </li>
+        </ul>
+        <footer v-if="log.creator_name" class="creator-info">
+          <span>发布者: {{ log.creator_name }}</span>
+        </footer>
+      </article>
+    </div>
+  </div>
+</template>
 
 <style lang="scss" scoped>
 .page-header {

@@ -1,41 +1,4 @@
 <!-- 进入「我们」页的欢迎遮罩：艺术字 → 点击后全屏视频 → 播完关闭（仅客户端） -->
-<template>
-  <Teleport to="body">
-    <div
-      v-if="alive"
-      class="welcome"
-      :class="[
-        `welcome--${phase}`,
-        {
-          'welcome--ready': clickReady && phase === 'intro',
-        },
-      ]"
-      role="dialog"
-      aria-modal="true"
-      aria-label="我们结婚吧"
-      @pointerdown.prevent="onOverlayPointerDown"
-      @pointerup.prevent="onOverlayPointerUp"
-    >
-      <div v-show="phase !== 'video'" class="welcome__veil" />
-
-      <div v-show="phase === 'intro'" class="welcome__copy">
-        <p class="welcome__title">我们结婚吧！</p>
-        <p class="welcome__hint">{{ clickReady ? '点击屏幕继续' : '' }}</p>
-      </div>
-
-      <!-- 点击后再挂 src；preload=none 避免进页就拉 MP4 -->
-      <video
-        v-show="phase === 'video'"
-        ref="videoRef"
-        class="welcome__video"
-        playsinline
-        preload="none"
-        @ended="onVideoEnded"
-        @error="onVideoEnded"
-      />
-    </div>
-  </Teleport>
-</template>
 
 <script setup>
 import { playWelcomeBgm, preloadWelcomeBgm } from '~/utils/welcomeBgm.js'
@@ -161,6 +124,44 @@ onBeforeUnmount(() => {
   lockScroll(false)
 })
 </script>
+
+<template>
+  <Teleport to="body">
+    <div
+      v-if="alive"
+      class="welcome"
+      :class="[
+        `welcome--${phase}`,
+        {
+          'welcome--ready': clickReady && phase === 'intro',
+        },
+      ]"
+      role="dialog"
+      aria-modal="true"
+      aria-label="我们结婚吧"
+      @pointerdown.prevent="onOverlayPointerDown"
+      @pointerup.prevent="onOverlayPointerUp"
+    >
+      <div v-show="phase !== 'video'" class="welcome__veil" />
+
+      <div v-show="phase === 'intro'" class="welcome__copy">
+        <p class="welcome__title">我们结婚吧！</p>
+        <p class="welcome__hint">{{ clickReady ? '点击屏幕继续' : '' }}</p>
+      </div>
+
+      <!-- 点击后再挂 src；preload=none 避免进页就拉 MP4 -->
+      <video
+        v-show="phase === 'video'"
+        ref="videoRef"
+        class="welcome__video"
+        playsinline
+        preload="none"
+        @ended="onVideoEnded"
+        @error="onVideoEnded"
+      />
+    </div>
+  </Teleport>
+</template>
 
 <style lang="scss" scoped>
 .welcome {

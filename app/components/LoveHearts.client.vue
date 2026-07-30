@@ -1,3 +1,22 @@
+<script setup>
+// 仅客户端渲染的随机爱心动画，避免水合不一致
+
+const heartEmojis = ['❤️', '💕', '💖', '💗', '💙', '💚', '💛', '💜', '🖤', '🤍', '💝', '💞', '💟']
+
+// 生成随机爱心位置与动画参数
+function generateHearts(count) {
+  return Array.from({ length: count }, () => ({
+    emoji: heartEmojis[Math.floor(Math.random() * heartEmojis.length)],
+    left: Math.random() * 100,
+    delay: Math.random() * 8,
+    duration: 8 + Math.random() * 5,
+  }))
+}
+
+const fallingHearts = ref(generateHearts(30))
+const floatingHearts = ref(generateHearts(15))
+</script>
+
 <template>
   <div class="hearts" aria-hidden="true">
     <div
@@ -27,25 +46,6 @@
     </div>
   </div>
 </template>
-
-<script setup>
-// 仅客户端渲染的随机爱心动画，避免水合不一致
-
-const heartEmojis = ['❤️', '💕', '💖', '💗', '💙', '💚', '💛', '💜', '🖤', '🤍', '💝', '💞', '💟']
-
-// 生成随机爱心位置与动画参数
-function generateHearts(count) {
-  return Array.from({ length: count }, () => ({
-    emoji: heartEmojis[Math.floor(Math.random() * heartEmojis.length)],
-    left: Math.random() * 100,
-    delay: Math.random() * 8,
-    duration: 8 + Math.random() * 5,
-  }))
-}
-
-const fallingHearts = ref(generateHearts(30))
-const floatingHearts = ref(generateHearts(15))
-</script>
 
 <style lang="scss" scoped>
 .hearts {

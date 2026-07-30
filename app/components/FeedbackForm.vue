@@ -1,3 +1,47 @@
+<script setup>
+// 关于页建议反馈表单：提交到本站 /api/feedback，由服务端转发 NotifyX
+
+const title = ref('')
+const content = ref('')
+const contact = ref('')
+const submitting = ref(false)
+const message = ref('')
+const messageOk = ref(false)
+
+// 提交反馈
+async function onSubmit() {
+  if (submitting.value) return
+  message.value = ''
+  submitting.value = true
+  try {
+    const res = await $fetch('/api/feedback', {
+      method: 'POST',
+      body: {
+        title: title.value,
+        content: content.value,
+        contact: contact.value || undefined,
+      },
+    })
+    if (res?.code === 0) {
+      messageOk.value = true
+      message.value = res.message || '提交成功'
+      title.value = ''
+      content.value = ''
+      contact.value = ''
+    } else {
+      messageOk.value = false
+      message.value = res?.message || '提交失败'
+    }
+  } catch (error) {
+    messageOk.value = false
+    message.value = '网络异常，请稍后再试'
+    console.error('feedback submit failed', error)
+  } finally {
+    submitting.value = false
+  }
+}
+</script>
+
 <template>
   <form class="feedback-form" @submit.prevent="onSubmit">
     <p class="feedback-form__hint">欢迎提出改进建议，提交后我们会尽快查看。</p>
@@ -52,50 +96,6 @@
     </button>
   </form>
 </template>
-
-<script setup>
-// 关于页建议反馈表单：提交到本站 /api/feedback，由服务端转发 NotifyX
-
-const title = ref('')
-const content = ref('')
-const contact = ref('')
-const submitting = ref(false)
-const message = ref('')
-const messageOk = ref(false)
-
-// 提交反馈
-async function onSubmit() {
-  if (submitting.value) return
-  message.value = ''
-  submitting.value = true
-  try {
-    const res = await $fetch('/api/feedback', {
-      method: 'POST',
-      body: {
-        title: title.value,
-        content: content.value,
-        contact: contact.value || undefined,
-      },
-    })
-    if (res?.code === 0) {
-      messageOk.value = true
-      message.value = res.message || '提交成功'
-      title.value = ''
-      content.value = ''
-      contact.value = ''
-    } else {
-      messageOk.value = false
-      message.value = res?.message || '提交失败'
-    }
-  } catch (error) {
-    messageOk.value = false
-    message.value = '网络异常，请稍后再试'
-    console.error('feedback submit failed', error)
-  } finally {
-    submitting.value = false
-  }
-}
-</script>
 
 <style lang="scss" scoped>
 .feedback-form {

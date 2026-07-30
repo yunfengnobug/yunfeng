@@ -6,6 +6,7 @@ alwaysApply: false
 
 # 页面与布局
 
+- SFC 块顺序：文件头注释 → `<script setup>` → `<template>` → `<style>`
 - 路由：`app/pages/`；请求/分页放 composable 或 Pinia，页面保持薄
 - 列表/内容页：首屏数据用 `useAsyncData` / `useFetch`；筛选与分页逻辑下沉，页面保持薄
 - 需鉴权页：`layout` + `middleware` 显式声明；公开页用轻量布局（如 `blank`）

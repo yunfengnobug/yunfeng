@@ -1,12 +1,3 @@
-<template>
-  <section class="home">
-    <blockquote class="quote-container">
-      <p class="hitokoto">{{ hitokotoText }}</p>
-      <footer class="author">{{ authorText }}</footer>
-    </blockquote>
-  </section>
-</template>
-
 <script setup>
 // 首页：浏览器端请求一言（按用户 IP 计限流，避免服务端同 IP QPS）
 
@@ -49,6 +40,15 @@ onUnmounted(() => {
   }
 })
 </script>
+
+<template>
+  <section class="home">
+    <blockquote class="quote-container">
+      <p class="hitokoto">{{ hitokotoText }}</p>
+      <footer class="author">{{ authorText }}</footer>
+    </blockquote>
+  </section>
+</template>
 
 <style lang="scss" scoped>
 .home {

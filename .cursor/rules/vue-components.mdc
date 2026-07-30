@@ -8,19 +8,11 @@ alwaysApply: false
 
 ## 组件
 
-- 顺序：`<template>` → `<script setup>` → `<style lang="scss" scoped>`
+- 顺序：文件头注释 → `<script setup>` → `<template>` → `<style lang="scss" scoped>`
 - Props / Emits 用运行时声明；纯展示组件不发请求
 
 ```vue
-<template>
-  <div class="page-header">
-    <h2 class="page-header__title">{{ title }}</h2>
-    <button type="button" class="page-header__action" @click="emit('refresh')">
-      刷新
-    </button>
-  </div>
-</template>
-
+<!-- 页面标题区：标题 + 刷新 -->
 <script setup>
 // 页面标题
 const props = defineProps({
@@ -30,6 +22,15 @@ const props = defineProps({
 
 const emit = defineEmits(['refresh'])
 </script>
+
+<template>
+  <div class="page-header">
+    <h2 class="page-header__title">{{ title }}</h2>
+    <button type="button" class="page-header__action" @click="emit('refresh')">
+      刷新
+    </button>
+  </div>
+</template>
 
 <style lang="scss" scoped>
 .page-header {

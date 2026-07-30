@@ -1,3 +1,20 @@
+<script setup>
+// 站点默认布局：顶栏导航 + 内容区 + 页脚
+
+const route = useRoute()
+
+// 页脚年份（固定 Asia/Shanghai，SSR/CSR 一致）
+const currentYear = getShanghaiYear()
+
+// 内容区 padding；页面可通过 definePageMeta({ contentPadding }) 覆盖
+const contentPadding = computed(() => {
+  if ('contentPadding' in route.meta) {
+    return route.meta.contentPadding
+  }
+  return '40px 20px 60px'
+})
+</script>
+
 <template>
   <div class="app-layout">
     <header class="app-navbar">
@@ -36,23 +53,6 @@
     </footer>
   </div>
 </template>
-
-<script setup>
-// 站点默认布局：顶栏导航 + 内容区 + 页脚
-
-const route = useRoute()
-
-// 页脚年份（固定 Asia/Shanghai，SSR/CSR 一致）
-const currentYear = getShanghaiYear()
-
-// 内容区 padding；页面可通过 definePageMeta({ contentPadding }) 覆盖
-const contentPadding = computed(() => {
-  if ('contentPadding' in route.meta) {
-    return route.meta.contentPadding
-  }
-  return '40px 20px 60px'
-})
-</script>
 
 <style lang="scss" scoped>
 @use '~/assets/styles/variables.scss' as *;

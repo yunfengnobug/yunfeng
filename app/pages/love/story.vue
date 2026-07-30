@@ -1,3 +1,89 @@
+<script setup>
+// 「我们的故事」纪念页（由原 /love 迁入）；随机爱心由客户端组件承载
+
+definePageMeta({
+  // 去掉内容区内边距，全宽沉浸展示
+  contentPadding: 0,
+})
+
+useSeoMeta({
+  title: '我们的故事',
+  description: '王俊杰与李朝新的纪念页',
+})
+
+// 离开「我们」板块时停止欢迎背景音乐
+useStopWelcomeBgmOnLeave()
+
+const titleChars = '李朝新，我爱你'.split('')
+
+// 在一起起始日（上海日历日），SSR/CSR 统一按 Asia/Shanghai 取整算天数
+const START_DATE_KEY = '2025-06-20'
+
+// 计算已在一起的天数（上海时区日历差，与进程本地时区无关）
+function calcDaysCount() {
+  return calendarDaysSinceShanghai(START_DATE_KEY)
+}
+
+const daysCount = ref(calcDaysCount())
+
+onMounted(() => {
+  // 客户端再校准一次，避免跨请求边界的极小偏差
+  daysCount.value = calcDaysCount()
+})
+
+const loveCards = [
+  { icon: '😊', title: '你的笑容', text: '如春风般温暖，如阳光般灿烂，是我心中最美的风景' },
+  { icon: '🎵', title: '你的声音', text: '如天籁般动听，如清泉般甘甜，是我最爱的旋律' },
+  { icon: '👀', title: '你的眼睛', text: '如星辰般闪亮，如大海般深邃，是我永远的港湾' },
+  { icon: '🤗', title: '你的拥抱', text: '如暖阳般温暖，如港湾般安全，是我最渴望的归宿，想抱抱' },
+  { icon: '🌙', title: '你的温柔', text: '如月光般柔和，如丝绸般细腻，是我最珍贵的宝藏' },
+  { icon: '👧', title: '你的可爱', text: '软软糯糯的小脸，机智又可爱，让人想捏捏' },
+]
+
+const timelineItems = [
+  {
+    icon: '🌅',
+    title: '我们在一起了',
+    date: '2025年6月20日',
+    text: '那天红玫瑰飘香，现在想来都是甜蜜。你的手那么柔软，那么温暖，牵着你的手，我感觉拥有了整个世界。',
+  },
+]
+
+const messages = [
+  { icon: '✨', text: '你是我生命中最美好的意外' },
+  { icon: '🍀', text: '遇见你是我最大的幸运' },
+  { icon: '😊', text: '你的笑容是我最大的幸福' },
+  { icon: '👴👵', text: '我想和你一起变老' },
+  { icon: '👸', text: '你是我心中永远的公主' },
+  { icon: '💝', text: '我爱你胜过爱自己' },
+  { icon: '🚀', text: '你是我前进的动力' },
+  { icon: '🍯', text: '愿我们的爱情永远甜蜜' },
+  { icon: '⭐', text: '你是我心中最亮的星' },
+  { icon: '🏠', text: '我想给你最好的生活' },
+  { icon: '💎', text: '你是我最珍贵的宝贝' },
+  { icon: '🌟', text: '愿我们的爱情如星辰般永恒' },
+]
+
+const futurePlans = [
+  { icon: '🌍', title: '环游世界', text: '和你一起看遍世界各地的美景，留下我们美好的回忆' },
+  { icon: '🏡', title: '温馨的家', text: '建造一个属于我们的小窝，充满爱和温暖' },
+  { icon: '🐕', title: '养一只宠物', text: '一起照顾我们的小宝贝，体验做父母的快乐' },
+  { icon: '📚', title: '学习新技能', text: '一起成长，一起进步，成为更好的自己' },
+  { icon: '🏃‍♀️', title: '健康生活', text: '一起运动，一起养生，拥有健康的身体' },
+  { icon: '💒', title: '浪漫的婚礼', text: '在亲朋好友的见证下，许下我们一生的承诺' },
+]
+
+const letterLines = [
+  '亲爱的朝新，遇见你是我生命中最美好的奇迹。',
+  '你的笑容如阳光般温暖，你的声音如天籁般动听。',
+  '我想和你一起看遍世间美景，一起走过每一个春夏秋冬。',
+  '愿我们的爱情如星辰般永恒，如大海般深邃。',
+  '我爱你，李朝新！',
+  '愿我们的爱情故事永远继续下去，直到永远。',
+  '"下辈子，我们还在一起。"上辈子，我们也是这么说的。',
+]
+</script>
+
 <template>
   <div class="love-container">
     <LoveHearts />
@@ -98,92 +184,6 @@
     </section>
   </div>
 </template>
-
-<script setup>
-// 「我们的故事」纪念页（由原 /love 迁入）；随机爱心由客户端组件承载
-
-definePageMeta({
-  // 去掉内容区内边距，全宽沉浸展示
-  contentPadding: 0,
-})
-
-useSeoMeta({
-  title: '我们的故事',
-  description: '王俊杰与李朝新的纪念页',
-})
-
-// 离开「我们」板块时停止欢迎背景音乐
-useStopWelcomeBgmOnLeave()
-
-const titleChars = '李朝新，我爱你'.split('')
-
-// 在一起起始日（上海日历日），SSR/CSR 统一按 Asia/Shanghai 取整算天数
-const START_DATE_KEY = '2025-06-20'
-
-// 计算已在一起的天数（上海时区日历差，与进程本地时区无关）
-function calcDaysCount() {
-  return calendarDaysSinceShanghai(START_DATE_KEY)
-}
-
-const daysCount = ref(calcDaysCount())
-
-onMounted(() => {
-  // 客户端再校准一次，避免跨请求边界的极小偏差
-  daysCount.value = calcDaysCount()
-})
-
-const loveCards = [
-  { icon: '😊', title: '你的笑容', text: '如春风般温暖，如阳光般灿烂，是我心中最美的风景' },
-  { icon: '🎵', title: '你的声音', text: '如天籁般动听，如清泉般甘甜，是我最爱的旋律' },
-  { icon: '👀', title: '你的眼睛', text: '如星辰般闪亮，如大海般深邃，是我永远的港湾' },
-  { icon: '🤗', title: '你的拥抱', text: '如暖阳般温暖，如港湾般安全，是我最渴望的归宿，想抱抱' },
-  { icon: '🌙', title: '你的温柔', text: '如月光般柔和，如丝绸般细腻，是我最珍贵的宝藏' },
-  { icon: '👧', title: '你的可爱', text: '软软糯糯的小脸，机智又可爱，让人想捏捏' },
-]
-
-const timelineItems = [
-  {
-    icon: '🌅',
-    title: '我们在一起了',
-    date: '2025年6月20日',
-    text: '那天红玫瑰飘香，现在想来都是甜蜜。你的手那么柔软，那么温暖，牵着你的手，我感觉拥有了整个世界。',
-  },
-]
-
-const messages = [
-  { icon: '✨', text: '你是我生命中最美好的意外' },
-  { icon: '🍀', text: '遇见你是我最大的幸运' },
-  { icon: '😊', text: '你的笑容是我最大的幸福' },
-  { icon: '👴👵', text: '我想和你一起变老' },
-  { icon: '👸', text: '你是我心中永远的公主' },
-  { icon: '💝', text: '我爱你胜过爱自己' },
-  { icon: '🚀', text: '你是我前进的动力' },
-  { icon: '🍯', text: '愿我们的爱情永远甜蜜' },
-  { icon: '⭐', text: '你是我心中最亮的星' },
-  { icon: '🏠', text: '我想给你最好的生活' },
-  { icon: '💎', text: '你是我最珍贵的宝贝' },
-  { icon: '🌟', text: '愿我们的爱情如星辰般永恒' },
-]
-
-const futurePlans = [
-  { icon: '🌍', title: '环游世界', text: '和你一起看遍世界各地的美景，留下我们美好的回忆' },
-  { icon: '🏡', title: '温馨的家', text: '建造一个属于我们的小窝，充满爱和温暖' },
-  { icon: '🐕', title: '养一只宠物', text: '一起照顾我们的小宝贝，体验做父母的快乐' },
-  { icon: '📚', title: '学习新技能', text: '一起成长，一起进步，成为更好的自己' },
-  { icon: '🏃‍♀️', title: '健康生活', text: '一起运动，一起养生，拥有健康的身体' },
-  { icon: '💒', title: '浪漫的婚礼', text: '在亲朋好友的见证下，许下我们一生的承诺' },
-]
-
-const letterLines = [
-  '亲爱的朝新，遇见你是我生命中最美好的奇迹。',
-  '你的笑容如阳光般温暖，你的声音如天籁般动听。',
-  '我想和你一起看遍世间美景，一起走过每一个春夏秋冬。',
-  '愿我们的爱情如星辰般永恒，如大海般深邃。',
-  '我爱你，李朝新！',
-  '愿我们的爱情故事永远继续下去，直到永远。',
-  '"下辈子，我们还在一起。"上辈子，我们也是这么说的。',
-]
-</script>
 
 <style scoped lang="scss">
 .love-container {
