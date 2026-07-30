@@ -1,5 +1,8 @@
 // 接收站点建议反馈，经 NotifyX 发送消息 API 转发（密钥仅服务端）
 export default defineEventHandler(async (event) => {
+  // 同 IP：10 秒最多 3 次；1 分钟超 15 封 2 小时；每天超 30 封 1 天
+  assertFeedbackNotRateLimited(event)
+
   const config = useRuntimeConfig(event)
   // 优先 runtimeConfig；兼容 PM2 注入的进程环境变量
   const notifyxKey =
