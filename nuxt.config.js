@@ -21,18 +21,20 @@ export default defineNuxtConfig({
       meta: [{ name: 'description', content: '王俊杰与李朝新的网站：记录生活、技术与爱' }],
     },
   },
+  // 敏感项只写空默认值，勿在此读 process.env，否则会在 pnpm build 时编进 .output。
+  // 运行时由 NUXT_*（PM2 / .runtime.env）覆盖：NUXT_NOTIFYX_KEY、NUXT_DB_* 等。
   runtimeConfig: {
-    // NotifyX 发送密钥（仅服务端）；用环境变量 NUXT_NOTIFYX_KEY 覆盖
+    // NotifyX 发送密钥（仅服务端）
     notifyxKey: '',
-    // MySQL 主机（与 admin 同库；NUXT_DB_HOST / DB_HOST）
-    dbHost: process.env.NUXT_DB_HOST || process.env.DB_HOST || '127.0.0.1',
+    // MySQL 主机，默认本机
+    dbHost: '127.0.0.1',
     // MySQL 端口，默认 3306
-    dbPort: process.env.NUXT_DB_PORT || process.env.DB_PORT || '3306',
+    dbPort: '3306',
     // MySQL 用户名
-    dbUser: process.env.NUXT_DB_USER || process.env.DB_USER || '',
+    dbUser: '',
     // MySQL 密码
-    dbPassword: process.env.NUXT_DB_PASSWORD || process.env.DB_PASSWORD || '',
-    // MySQL 数据库名（与 admin 相同）
-    dbName: process.env.NUXT_DB_NAME || process.env.DB_NAME || '',
+    dbPassword: '',
+    // MySQL 数据库名
+    dbName: '',
   },
 })

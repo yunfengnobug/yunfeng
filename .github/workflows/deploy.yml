@@ -34,10 +34,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 5. 从 GitHub Secret 写入构建用环境变量
-      #    - ENV_PRODUCTION_YUNFENG：整份生产环境变量（多行 KEY=value）
-      #    - 注意：rsync 排除 .env.*，密钥不会以明文文件落到服务器目录
-      - name: Create .env from secrets
+      # 5. 校验生产 Secret 已配置（构建期不写 .env，避免把 DB/NotifyX 密钥编进 .output）
+      #    - 密钥只在步骤 9 写入服务器 .runtime.env，由 PM2 运行时注入 NUXT_*
+      - name: Check production secrets
         env:
           ENV_PRODUCTION_YUNFENG: ${{ secrets.ENV_PRODUCTION_YUNFENG }}
         run: |
@@ -45,23 +44,31 @@ jobs:
             echo "❌ Secret ENV_PRODUCTION_YUNFENG 未配置（请粘贴与本地 .env 相同的多行 KEY=value）"
             exit 1
           fi
-          printf '%s\n' "$ENV_PRODUCTION_YUNFENG" > .env
-          echo "✅ wrote .env from ENV_PRODUCTION_YUNFENG"
+          echo "✅ ENV_PRODUCTION_YUNFENG is set（将在部署后写入服务器 .runtime.env）"
 
       # 6. 构建 Nuxt 应用（Nitro node-server）
       #    产物位于 .output/ 目录（入口：.output/server/index.mjs）
+      #    不注入 DB/NotifyX 等密钥，runtimeConfig 敏感项保持空默认值
       - name: Build Nuxt app
         run: pnpm build
         env:
           # 构建预设；端口仅影响运行时，由 PM2 / ecosystem 管理
           NITRO_PRESET: node-server
 
-      # 6.1 校验产物，避免把残缺构建同步到服务器
+      # 6.1 校验产物，避免把残缺构建同步到服务器；并抽查敏感串未被编入
       - name: Verify build output
+        env:
+          ENV_PRODUCTION_YUNFENG: ${{ secrets.ENV_PRODUCTION_YUNFENG }}
         run: |
           test -f .output/server/index.mjs || (echo "❌ missing .output/server/index.mjs" && exit 1)
           test -d .output/public || (echo "❌ missing .output/public" && exit 1)
-          echo "✅ Nuxt build output OK"
+          # 若 Secret 里含 DB_PASSWORD=xxx，确认 xxx 未出现在服务端产物中
+          pw=$(printf '%s\n' "$ENV_PRODUCTION_YUNFENG" | sed -n 's/^DB_PASSWORD=//p' | head -1)
+          if [ -n "$pw" ] && grep -R -F -q -- "$pw" .output/server; then
+            echo "❌ DB_PASSWORD 出现在构建产物中，请检查 nuxt.config runtimeConfig"
+            exit 1
+          fi
+          echo "✅ Nuxt build output OK（未检出 DB_PASSWORD 泄漏）"
 
       # 7. 上传构建产物到服务器
       #    - 将 .output/ 内的内容直接同步到 /server/yunfeng

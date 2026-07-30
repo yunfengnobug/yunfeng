@@ -83,7 +83,7 @@ nuxt.config.js
 
 ## 部署（GitHub Actions + PM2）
 
-推送到 `main` 会触发 `.github/workflows/deploy.yml`：CI 用 pnpm 构建 Nuxt，将 `.output/` **内容**同步到 **`/server/yunfeng`**（路径写死在 workflow，非 Secret），再 `pm2 reload`。线上端口固定 **3001**（`ecosystem.config.cjs`）。
+推送到 `main` 会触发 `.github/workflows/deploy.yml`：CI 用 pnpm 构建 Nuxt（**构建期不注入 DB/NotifyX 密钥**），将 `.output/` **内容**同步到 **`/server/yunfeng`**（路径写死在 workflow，非 Secret），再把 Secret 写入机上 `.runtime.env` 后 `pm2 reload`。线上端口固定 **3001**（`ecosystem.config.cjs`）。
 
 服务器目录示例：
 
@@ -120,7 +120,7 @@ NOTIFYX_KEY=你的NotifyX密钥
 
 说明：
 
-- 部署脚本会把整份内容写入服务器 `/server/yunfeng/.runtime.env`，并为 `DB_*` / `NOTIFYX_KEY` 自动补 `NUXT_*` 别名，由 PM2 注入进程。
+- 构建产物不含数据库密码与 NotifyX 密钥；部署脚本把整份 Secret 写入服务器 `/server/yunfeng/.runtime.env`，并为 `DB_*` / `NOTIFYX_KEY` 自动补 `NUXT_*` 别名，由 PM2 注入进程。
 - 也可直接写 `NUXT_NOTIFYX_KEY=...`（不必再写 `NOTIFYX_KEY`）；两者都写时以文件中后出现的为准。
 
 ### 建议反馈（NotifyX）
