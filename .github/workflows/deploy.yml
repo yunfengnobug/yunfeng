@@ -70,40 +70,32 @@ jobs:
           fi
           echo "✅ Nuxt build output OK（未检出 DB_PASSWORD 泄漏）"
 
-      # 7. 上传构建产物到服务器
-      #    - 将 .output/ 内的内容直接同步到 /server/yunfeng
-      #      线上目录结构：server/、public/ 等，不再套一层 .output
-      #    - 部署路径写死在本文件（/server/项目名），不再使用 DEPLOY_PATH Secret
-      #    - 排除 .env.*、.runtime.env、ecosystem、logs，防止 --delete 清掉机上配置与日志
-      - name: Deploy build output via rsync
+      # 7. 上传构建产物到 staging（先不碰线上目录，避免 --delete 误伤）
+      #    - .output/ 内容同步到 /server/yunfeng.staging/
+      #    - 排除 .env.*、.runtime.env、ecosystem、logs
+      - name: Deploy build output to staging via rsync
         uses: burnett01/rsync-deployments@7.0.2
         with:
           switches: -avzr --delete --exclude='.env' --exclude='.env.*' --exclude='.runtime.env' --exclude='ecosystem.config.cjs' --exclude='logs'
           path: .output/
-          remote_path: /server/yunfeng/
+          remote_path: /server/yunfeng.staging/
           remote_host: ${{ secrets.HOST }}
           remote_user: ${{ secrets.USER }}
           remote_key: ${{ secrets.SSH_KEY }}
 
-      # 8. 上传 ecosystem.config.cjs（PM2 配置文件）
-      #    单独上传确保配置始终最新
-      - name: Deploy ecosystem.config.cjs via rsync
+      # 8. 上传 ecosystem.config.cjs 到 staging
+      - name: Deploy ecosystem.config.cjs to staging via rsync
         uses: burnett01/rsync-deployments@7.0.2
         with:
           switches: -avz
           path: ecosystem.config.cjs
-          remote_path: /server/yunfeng/
+          remote_path: /server/yunfeng.staging/
           remote_host: ${{ secrets.HOST }}
           remote_user: ${{ secrets.USER }}
           remote_key: ${{ secrets.SSH_KEY }}
 
-      # 9. 远程执行零停机部署
-      #    - 将 ENV_PRODUCTION_YUNFENG 写入服务器 .runtime.env，并补全 NUXT_ 运行时别名
-      #    - 创建 logs 目录（防止 PM2 写日志失败）
-      #    - 检查 server/index.mjs 是否存在（产物已展开到 /server/yunfeng 根目录）
-      #    - 优先使用 pm2 reload（零停机）
-      #    - 如果 reload 失败，回退到 pm2 startOrRestart（短暂停机）
-      - name: Graceful reload PM2
+      # 9. 远程校验 staging → 写入密钥 → 原子切换到 /server/yunfeng → pm2 reload
+      - name: Promote staging and reload PM2
         uses: appleboy/ssh-action@v1.2.0
         env:
           ENV_PRODUCTION_YUNFENG: ${{ secrets.ENV_PRODUCTION_YUNFENG }}
@@ -111,34 +103,31 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
-          # 把 ENV_PRODUCTION_YUNFENG 传进远程 shell（名称需出现在 envs 列表）
           envs: ENV_PRODUCTION_YUNFENG
-          command_timeout: 60s # 给 reload 充足的时间
+          command_timeout: 60s
           script: |
             set -e
-            cd /server/yunfeng
+            LIVE=/server/yunfeng
+            STAGING=/server/yunfeng.staging
+            PREV=/server/yunfeng.prev
 
-            # 确保日志目录存在
-            mkdir -p logs
-
-            # 检查 Nitro 入口是否存在
-            if [ ! -f "server/index.mjs" ]; then
-              echo "❌ Error: server/index.mjs not found in /server/yunfeng"
+            if [ ! -f "$STAGING/server/index.mjs" ]; then
+              echo "❌ Error: server/index.mjs not found in $STAGING"
               exit 1
             fi
-
-            # 检查 PM2 配置是否已随仓库部署
-            if [ ! -f "ecosystem.config.cjs" ]; then
-              echo "❌ Error: ecosystem.config.cjs not found"
+            if [ ! -d "$STAGING/public" ]; then
+              echo "❌ Error: public/ not found in $STAGING"
               exit 1
             fi
-
-            # 写入运行时环境（仅服务器本地，rsync --delete 已排除该文件）
-            # 本地键名（DB_* / NOTIFYX_KEY）同时写出 NUXT_*，供 Nitro runtimeConfig 运行时覆盖
+            if [ ! -f "$STAGING/ecosystem.config.cjs" ]; then
+              echo "❌ Error: ecosystem.config.cjs not found in $STAGING"
+              exit 1
+            fi
             if [ -z "$ENV_PRODUCTION_YUNFENG" ]; then
               echo "❌ ENV_PRODUCTION_YUNFENG empty"
               exit 1
             fi
+
             umask 077
             {
               printf '%s\n' "$ENV_PRODUCTION_YUNFENG"
@@ -158,15 +147,25 @@ jobs:
                   NOTIFYX_KEY) printf 'NUXT_NOTIFYX_KEY=%s\n' "$val" ;;
                 esac
               done
-            } > .runtime.env
-            echo "✅ wrote .runtime.env from ENV_PRODUCTION_YUNFENG（含 NUXT_ 别名）"
+            } > "$STAGING/.runtime.env"
+            echo "✅ wrote staging .runtime.env from ENV_PRODUCTION_YUNFENG（含 NUXT_ 别名）"
 
-            # 执行零停机 reload，失败则回退到 startOrRestart
+            mkdir -p "$STAGING/logs"
+            if [ -d "$LIVE/logs" ]; then
+              cp -a "$LIVE/logs/." "$STAGING/logs/" 2>/dev/null || true
+            fi
+
+            rm -rf "$PREV"
+            if [ -d "$LIVE" ]; then
+              mv "$LIVE" "$PREV"
+            fi
+            mv "$STAGING" "$LIVE"
+            echo "✅ promoted $STAGING → $LIVE"
+
+            cd "$LIVE"
             echo "🔄 Attempting zero-downtime reload..."
             pm2 reload ecosystem.config.cjs --update-env || \
               (echo "⚠️  Reload failed, falling back to restart..." && pm2 startOrRestart ecosystem.config.cjs --update-env)
 
-            # 保存 PM2 配置（重启服务器后自动恢复）
             pm2 save
-
             echo "✅ Deployment completed successfully (port 3001)"

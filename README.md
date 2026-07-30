@@ -83,7 +83,7 @@ nuxt.config.js
 
 ## 部署（GitHub Actions + PM2）
 
-推送到 `main` 会触发 `.github/workflows/deploy.yml`：CI 用 pnpm 构建 Nuxt（**构建期不注入 DB/NotifyX 密钥**），将 `.output/` **内容**同步到 **`/server/yunfeng`**（路径写死在 workflow，非 Secret），再把 Secret 写入机上 `.runtime.env` 后 `pm2 reload`。线上端口固定 **3001**（`ecosystem.config.cjs`）。
+推送到 `main` 会触发 `.github/workflows/deploy.yml`：CI 用 pnpm 构建 Nuxt（**构建期不注入 DB/NotifyX 密钥**），将 `.output/` **内容**同步到 **`/server/yunfeng.staging`**，远程校验通过后再切换为 **`/server/yunfeng`**，再 `pm2 reload`。线上端口固定 **3001**（`ecosystem.config.cjs`）。
 
 服务器目录示例：
 
