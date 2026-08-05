@@ -1,5 +1,10 @@
 <script setup>
 // 关于页建议反馈表单：提交到本站 /api/feedback，由服务端转发 NotifyX
+// 提交时隐式附带访客指纹与特征，服务端另发一条关联通知（用户表单不可见）
+import {
+  collectClientVisitorMeta,
+  createFeedbackCorrelationId,
+} from '~/utils/client-fingerprint.js'
 
 const title = ref('')
 const content = ref('')
@@ -8,18 +13,30 @@ const submitting = ref(false)
 const message = ref('')
 const messageOk = ref(false)
 
-// 提交反馈
+// 提交反馈（同步隐式上报环境信息）
 async function onSubmit() {
   if (submitting.value) return
   message.value = ''
   submitting.value = true
   try {
+    // 关联编号：用户反馈与访客特征两条 NotifyX 共用
+    const correlationId = createFeedbackCorrelationId()
+    let clientMeta
+    try {
+      clientMeta = (await collectClientVisitorMeta()) || undefined
+    } catch (metaError) {
+      // 特征采集失败不阻断正式反馈
+      console.warn('collect client meta failed', metaError)
+    }
+
     const res = await $fetch('/api/feedback', {
       method: 'POST',
       body: {
         title: title.value,
         content: content.value,
         contact: contact.value || undefined,
+        correlationId,
+        clientMeta,
       },
     })
     if (res?.code === 0) {
@@ -63,7 +80,7 @@ async function onSubmit() {
       <textarea
         v-model.trim="content"
         name="content"
-        maxlength="2000"
+        maxlength="1900"
         rows="6"
         placeholder="详细描述你的想法或遇到的问题"
         required
