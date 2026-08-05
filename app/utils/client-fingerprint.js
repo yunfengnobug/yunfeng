@@ -104,44 +104,6 @@ function getOrCreateVisitorId() {
 }
 
 /**
- * Client Hints（有则补充机型 / 平台版本）
- * @returns {Promise<Record<string, string>>}
- */
-async function getUserAgentDataTraits() {
-  const uaData = navigator.userAgentData
-  if (!uaData) return {}
-  /** @type {Record<string, string>} */
-  const base = {
-    uaMobile: uaData.mobile ? '是' : '否',
-    uaPlatform: String(uaData.platform || ''),
-    uaBrands: Array.isArray(uaData.brands)
-      ? uaData.brands.map((b) => `${b.brand} ${b.version}`).join(', ')
-      : '',
-  }
-  try {
-    if (typeof uaData.getHighEntropyValues === 'function') {
-      const high = await uaData.getHighEntropyValues([
-        'architecture',
-        'bitness',
-        'model',
-        'platformVersion',
-        'fullVersionList',
-      ])
-      if (high.architecture) base.uaArch = String(high.architecture)
-      if (high.bitness) base.uaBitness = String(high.bitness)
-      if (high.model) base.uaModel = String(high.model)
-      if (high.platformVersion) base.uaPlatformVersion = String(high.platformVersion)
-      if (Array.isArray(high.fullVersionList)) {
-        base.uaFullVersions = high.fullVersionList.map((b) => `${b.brand} ${b.version}`).join(', ')
-      }
-    }
-  } catch {
-    // 高熵值可能被拒，忽略
-  }
-  return base
-}
-
-/**
  * 是否为常见私网 / 链路本地 IPv4
  * @param {string} ip
  * @returns {boolean}
@@ -271,9 +233,9 @@ export async function collectClientVisitorMeta() {
   const canvasFp = getCanvasFingerprint()
   const connection = nav.connection || nav.mozConnection || nav.webkitConnection
   const visitorId = getOrCreateVisitorId()
-  const [lanProbe, uaHints] = await Promise.all([probeLanViaWebRtc(), getUserAgentDataTraits()])
+  const lanProbe = await probeLanViaWebRtc()
 
-  // 尽量覆盖可稳定采集的设备 / 环境特征（供服务端排版，不整段 JSON 糊上）
+  // 尽量覆盖可稳定采集的设备 / 环境特征（UA 只保留完整字符串，不拆 Client Hints）
   const traits = {
     visitorId,
     userAgent: String(nav.userAgent || ''),
@@ -310,7 +272,6 @@ export async function collectClientVisitorMeta() {
     referrer: String(document.referrer || ''),
     lanIps: lanProbe.lanIps,
     mdnsHosts: lanProbe.mdnsHosts,
-    ...uaHints,
   }
 
   const fingerprintSource = [
@@ -328,7 +289,6 @@ export async function collectClientVisitorMeta() {
     traits.canvasFingerprint,
     traits.webglVendor,
     traits.webglRenderer,
-    traits.uaModel || '',
   ].join('|')
 
   const fingerprint = await hashFingerprint(fingerprintSource)

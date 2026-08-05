@@ -128,7 +128,7 @@ function display(value, fallback = '(无)') {
 }
 
 /**
- * 追加一节标题 + 若干「标签：值」行（跳过空值可选）
+ * 追加一节标题 + 若干字段（Markdown 列表：一项一行，避免被挤成一段）
  * @param {string[]} lines
  * @param {string} heading
  * @param {Array<[string, unknown]>} rows
@@ -143,11 +143,20 @@ function pushSection(lines, heading, rows, opts = {}) {
     ) {
       continue
     }
-    body.push(`${label}：${display(value)}`)
+    // 多值：标签一行，每个值单独一行
+    if (Array.isArray(value) && value.length) {
+      body.push(`- **${label}**`)
+      for (const item of value) {
+        body.push(`  - ${display(item)}`)
+      }
+      continue
+    }
+    body.push(`- **${label}**：${display(value)}`)
   }
   if (!body.length) return
   if (lines.length) lines.push('')
-  lines.push(`【${heading}】`)
+  lines.push(`### ${heading}`)
+  lines.push('')
   lines.push(...body)
 }
 
@@ -185,8 +194,8 @@ export function buildVisitorMetaContent(info) {
 
   pushSection(lines, '网络', [
     ['公网 IP', info.ip || 'unknown'],
-    ['局域网 IP', lanIps.length ? lanIps.join(', ') : '(未获取)'],
-    ['本机主机名', mdnsHosts.length ? mdnsHosts.join(', ') : '(未获取)'],
+    ['局域网 IP', lanIps.length ? lanIps : '(未获取)'],
+    ['本机主机名', mdnsHosts.length ? mdnsHosts : '(未获取)'],
     ['网络类型', t.connectionType],
     ['下行估算 Mbps', t.downlink],
     ['请求 Accept-Language', info.requestAcceptLanguage],
@@ -194,12 +203,6 @@ export function buildVisitorMetaContent(info) {
 
   pushSection(lines, '设备', [
     ['平台', t.platform],
-    ['UA 平台', t.uaPlatform],
-    ['UA 平台版本', t.uaPlatformVersion],
-    ['架构', t.uaArch],
-    ['位数', t.uaBitness],
-    ['机型', t.uaModel],
-    ['是否移动端', t.uaMobile],
     ['逻辑 CPU', t.hardwareConcurrency],
     ['内存 GB', t.deviceMemory],
     ['触摸点', t.maxTouchPoints],
@@ -216,12 +219,11 @@ export function buildVisitorMetaContent(info) {
   ])
 
   pushSection(lines, '浏览器', [
-    ['语言', t.language],
-    ['语言列表', t.languages],
-    ['品牌', t.uaBrands],
-    ['完整版本', t.uaFullVersions],
+    // UA 只保留完整字符串，不再拆 Client Hints
     ['User-Agent', t.userAgent || info.requestUserAgent],
     ['Vendor', t.vendor],
+    ['语言', t.language],
+    ['语言列表', t.languages],
     ['Cookie', t.cookieEnabled === true ? '开' : t.cookieEnabled === false ? '关' : ''],
     ['DNT', t.doNotTrack],
     ['在线', t.online === true ? '是' : t.online === false ? '否' : ''],
