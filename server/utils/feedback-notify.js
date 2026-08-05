@@ -57,16 +57,61 @@ export function sanitizeClientMeta(raw) {
   return { visitorId, fingerprint, traits }
 }
 
+/** NotifyX description 实测上限约 64（文档写 500 已不准），预留余量 */
+export const NOTIFYX_DESCRIPTION_MAX = 64
+/** NotifyX title 上限 */
+export const NOTIFYX_TITLE_MAX = 100
+/** NotifyX content 上限 */
+export const NOTIFYX_CONTENT_MAX = 2000
+
+/**
+ * 截断 NotifyX 简介，避免超长被接口直接拒收
+ * @param {string} text
+ * @returns {string}
+ */
+export function truncateNotifyxDescription(text) {
+  return String(text || '')
+    .trim()
+    .slice(0, NOTIFYX_DESCRIPTION_MAX)
+}
+
 /**
  * 调用 NotifyX 发送一条消息
  * @param {string} notifyxKey
  * @param {{ title: string, content: string, description?: string }} payload
  */
 export async function sendNotifyxMessage(notifyxKey, payload) {
-  return $fetch(`https://www.notifyx.cn/api/v1/send/${notifyxKey}`, {
+  const body = {
+    title: String(payload.title || '').slice(0, NOTIFYX_TITLE_MAX),
+    content: String(payload.content || '').slice(0, NOTIFYX_CONTENT_MAX),
+  }
+  if (payload.description) {
+    body.description = truncateNotifyxDescription(payload.description)
+  }
+
+  const response = await fetch(`https://www.notifyx.cn/api/v1/send/${notifyxKey}`, {
     method: 'POST',
-    body: payload,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
   })
+
+  const text = await response.text()
+  let data = null
+  try {
+    data = text ? JSON.parse(text) : null
+  } catch {
+    data = { raw: text }
+  }
+
+  if (!response.ok) {
+    const detail = data?.error || data?.message || text || `HTTP ${response.status}`
+    const err = new Error(`NotifyX 发送失败：${detail}`)
+    err.statusCode = response.status
+    err.data = data
+    throw err
+  }
+
+  return data
 }
 
 /**

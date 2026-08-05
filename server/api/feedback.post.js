@@ -5,6 +5,7 @@ import {
   normalizeCorrelationId,
   sanitizeClientMeta,
   sendNotifyxMessage,
+  truncateNotifyxDescription,
 } from '../utils/feedback-notify.js'
 import { assertFeedbackNotRateLimited, getClientIp } from '../utils/rate-limit.js'
 
@@ -51,22 +52,35 @@ export default defineEventHandler(async (event) => {
     return { code: 1, message: '联系方式不能超过 100 字', data: null }
   }
 
-  // 正文末尾带关联编号；超长时截断，保证 NotifyX 侧不超过 2000
-  const contentWithId = `${content}\n\n——\n关联编号：${correlationId}`.slice(0, 2000)
+  // 完整编号放正文；简介有 64 字硬上限，只放短码以免 NotifyX 拒收
+  const visitorShort = clientMeta.visitorId
+    ? clientMeta.visitorId.replace(/-/g, '').slice(0, 8)
+    : ''
+  const corrShort = correlationId.replace(/-/g, '').slice(0, 8)
+  const contentTail = [
+    '',
+    '——',
+    `关联编号：${correlationId}`,
+    clientMeta.visitorId ? `访客编号：${clientMeta.visitorId}` : '',
+    contact ? `联系方式：${contact}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n')
+  const contentWithId = `${content}\n${contentTail}`.slice(0, 2000)
   const payload = {
     title: `${titlePrefix}${title}`,
     content: contentWithId,
   }
-  // description：联系方式 + 访客编号 + 关联编号（列表里可对上环境信息）
+  // description 仅短码（NotifyX 实测 max≈64，超长整单失败）
   const descParts = []
   if (contact) {
-    descParts.push(`联系方式：${contact}`)
+    descParts.push(`联:${contact.slice(0, 12)}`)
   }
-  if (clientMeta.visitorId) {
-    descParts.push(`访客：${clientMeta.visitorId}`)
+  if (visitorShort) {
+    descParts.push(`访:${visitorShort}`)
   }
-  descParts.push(`关联：${correlationId}`)
-  payload.description = descParts.join('｜').slice(0, 500)
+  descParts.push(`关:${corrShort}`)
+  payload.description = truncateNotifyxDescription(descParts.join('｜'))
 
   try {
     // 1) 用户可见的建议反馈
@@ -77,12 +91,14 @@ export default defineEventHandler(async (event) => {
       const ip = getClientIp(event)
       const visitorId = clientMeta.visitorId || ''
       // 标题带访客编号短码，列表里比单看出入口 IP 好认
-      const visitorShort = visitorId ? visitorId.replace(/-/g, '').slice(0, 8) : 'unknown'
-      const metaTitleBase = `[访客] ${visitorShort} · ${correlationId.slice(0, 8)}`
+      const metaVisitorShort = visitorId ? visitorId.replace(/-/g, '').slice(0, 8) : 'unknown'
+      const metaTitleBase = `[访客] ${metaVisitorShort} · ${corrShort}`
       const metaTitle = `${titlePrefix}${metaTitleBase}`.slice(0, 100)
       await sendNotifyxMessage(notifyxKey, {
         title: metaTitle,
-        description: `访客:${visitorId || '(无)'}｜关联:${correlationId}｜IP:${ip}`.slice(0, 500),
+        description: truncateNotifyxDescription(
+          `访:${metaVisitorShort}｜关:${corrShort}｜IP:${ip}`,
+        ),
         content: buildVisitorMetaContent({
           correlationId,
           ip,
