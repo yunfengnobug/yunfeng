@@ -2,6 +2,9 @@
  * 采集浏览器指纹与访客特征（仅客户端；失败时返回尽量多的可用字段）
  */
 
+/** localStorage 中的稳定访客编号键（同浏览器多次反馈可对照） */
+const VISITOR_ID_KEY = 'yunfeng-visitor-id'
+
 /**
  * 简易字符串哈希（djb2），用于 canvas / WebGL 摘要
  * @param {string} input
@@ -81,6 +84,64 @@ async function hashFingerprint(input) {
 }
 
 /**
+ * 读取或生成本机持久访客编号（同浏览器跨次反馈不变）
+ * @returns {string}
+ */
+function getOrCreateVisitorId() {
+  try {
+    const existing = String(localStorage.getItem(VISITOR_ID_KEY) || '').trim()
+    if (/^[a-zA-Z0-9_-]{8,64}$/.test(existing)) {
+      return existing
+    }
+    const next =
+      globalThis.crypto?.randomUUID?.() ||
+      `v-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+    localStorage.setItem(VISITOR_ID_KEY, next)
+    return next
+  } catch {
+    return `v-ephemeral-${Date.now().toString(36)}`
+  }
+}
+
+/**
+ * Client Hints（有则补充机型 / 平台版本）
+ * @returns {Promise<Record<string, string>>}
+ */
+async function getUserAgentDataTraits() {
+  const uaData = navigator.userAgentData
+  if (!uaData) return {}
+  /** @type {Record<string, string>} */
+  const base = {
+    uaMobile: uaData.mobile ? '是' : '否',
+    uaPlatform: String(uaData.platform || ''),
+    uaBrands: Array.isArray(uaData.brands)
+      ? uaData.brands.map((b) => `${b.brand} ${b.version}`).join(', ')
+      : '',
+  }
+  try {
+    if (typeof uaData.getHighEntropyValues === 'function') {
+      const high = await uaData.getHighEntropyValues([
+        'architecture',
+        'bitness',
+        'model',
+        'platformVersion',
+        'fullVersionList',
+      ])
+      if (high.architecture) base.uaArch = String(high.architecture)
+      if (high.bitness) base.uaBitness = String(high.bitness)
+      if (high.model) base.uaModel = String(high.model)
+      if (high.platformVersion) base.uaPlatformVersion = String(high.platformVersion)
+      if (Array.isArray(high.fullVersionList)) {
+        base.uaFullVersions = high.fullVersionList.map((b) => `${b.brand} ${b.version}`).join(', ')
+      }
+    }
+  } catch {
+    // 高熵值可能被拒，忽略
+  }
+  return base
+}
+
+/**
  * 是否为常见私网 / 链路本地 IPv4
  * @param {string} ip
  * @returns {boolean}
@@ -90,7 +151,6 @@ function isPrivateOrLinkLocalIpv4(ip) {
   const parts = ip.split('.').map((n) => Number(n))
   if (parts.some((n) => Number.isNaN(n) || n < 0 || n > 255)) return false
   const [a, b] = parts
-  // 10.0.0.0/8、172.16.0.0/12、192.168.0.0/16、169.254.0.0/16
   if (a === 10) return true
   if (a === 172 && b >= 16 && b <= 31) return true
   if (a === 192 && b === 168) return true
@@ -99,21 +159,23 @@ function isPrivateOrLinkLocalIpv4(ip) {
 }
 
 /**
- * WebRTC 试探局域网 IP（无权限弹窗；失败/超时返回空数组）
- * @param {number} [timeoutMs=1200]
- * @returns {Promise<string[]>}
+ * WebRTC 试探局域网 IP 与 mDNS 主机名（无权限弹窗；失败返回空）
+ * @param {number} [timeoutMs=1600]
+ * @returns {Promise<{ lanIps: string[], mdnsHosts: string[] }>}
  */
-function probeLanIpsViaWebRtc(timeoutMs = 1200) {
+function probeLanViaWebRtc(timeoutMs = 1600) {
   return new Promise((resolve) => {
     const RTCPeerConnection =
       window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection
     if (!RTCPeerConnection) {
-      resolve([])
+      resolve({ lanIps: [], mdnsHosts: [] })
       return
     }
 
     /** @type {Set<string>} */
-    const found = new Set()
+    const lanIps = new Set()
+    /** @type {Set<string>} */
+    const mdnsHosts = new Set()
     let settled = false
     /** @type {RTCPeerConnection | null} */
     let pc = null
@@ -131,39 +193,56 @@ function probeLanIpsViaWebRtc(timeoutMs = 1200) {
       } catch {
         // ignore
       }
-      resolve([...found])
+      resolve({ lanIps: [...lanIps], mdnsHosts: [...mdnsHosts] })
     }
 
     const timer = window.setTimeout(finish, timeoutMs)
 
-    try {
-      // 不配公网 STUN 也能出 host candidate；再加一个常见 STUN 提高出候选概率
-      pc = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
-      })
+    // 从 ICE candidate 提取私网 IP / mDNS 主机名
+    function ingestCandidate(candidateObj) {
+      if (!candidateObj) return
+      const raw = String(candidateObj.candidate || '')
+      const address = String(candidateObj.address || '')
+      const typ = String(candidateObj.type || '')
 
-      pc.createDataChannel('yunfeng-lan-probe')
+      const addresses = new Set()
+      if (address) addresses.add(address)
+      for (const ip of raw.match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g) || []) {
+        addresses.add(ip)
+      }
+      for (const host of raw.match(/\b[a-zA-Z0-9][a-zA-Z0-9-]{0,62}\.local\b/gi) || []) {
+        mdnsHosts.add(host.toLowerCase())
+      }
+      if (address.endsWith('.local')) {
+        mdnsHosts.add(address.toLowerCase())
+      }
 
-      pc.onicecandidate = (event) => {
-        const candidate = event.candidate?.candidate
-        if (!candidate) {
-          // null candidate 表示 ICE 收集结束
-          if (event.candidate === null) finish()
-          return
-        }
-        // candidate 形如：... typ host ... 或含 IP
-        const ipv4Matches = candidate.match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g) || []
-        for (const ip of ipv4Matches) {
-          if (isPrivateOrLinkLocalIpv4(ip)) {
-            found.add(ip)
-          }
-        }
-        // 已拿到至少一个局域网 IP 可提前结束，避免拖慢提交
-        if (found.size > 0 && candidate.includes('typ host')) {
-          finish()
+      for (const item of addresses) {
+        if (isPrivateOrLinkLocalIpv4(item)) {
+          lanIps.add(item)
         }
       }
 
+      // host 类型且已有可用线索时可提前结束
+      if (typ === 'host' && (lanIps.size > 0 || mdnsHosts.size > 0)) {
+        // 稍等其它 candidate，避免只收到一条就关
+        window.setTimeout(finish, 280)
+      }
+    }
+
+    try {
+      pc = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+      })
+      pc.createDataChannel('yunfeng-lan-probe')
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          ingestCandidate(event.candidate)
+          return
+        }
+        // null candidate：ICE 收集结束
+        finish()
+      }
       pc.createOffer()
         .then((offer) => pc.setLocalDescription(offer))
         .catch(() => finish())
@@ -175,7 +254,11 @@ function probeLanIpsViaWebRtc(timeoutMs = 1200) {
 
 /**
  * 采集当前访客浏览器特征与指纹（须在浏览器环境调用）
- * @returns {Promise<{ fingerprint: string, traits: Record<string, unknown> } | null>}
+ * @returns {Promise<{
+ *   visitorId: string
+ *   fingerprint: string
+ *   traits: Record<string, unknown>
+ * } | null>}
  */
 export async function collectClientVisitorMeta() {
   if (!import.meta.client || typeof window === 'undefined' || typeof navigator === 'undefined') {
@@ -187,14 +270,15 @@ export async function collectClientVisitorMeta() {
   const webgl = getWebglInfo()
   const canvasFp = getCanvasFingerprint()
   const connection = nav.connection || nav.mozConnection || nav.webkitConnection
-  // 试探局域网 IP；拿不到则为 []，不影响其余字段
-  const lanIps = await probeLanIpsViaWebRtc()
+  const visitorId = getOrCreateVisitorId()
+  const [lanProbe, uaHints] = await Promise.all([probeLanViaWebRtc(), getUserAgentDataTraits()])
 
-  // 尽量覆盖可稳定采集的设备 / 环境特征
+  // 尽量覆盖可稳定采集的设备 / 环境特征（供服务端排版，不整段 JSON 糊上）
   const traits = {
+    visitorId,
     userAgent: String(nav.userAgent || ''),
     language: String(nav.language || ''),
-    languages: Array.isArray(nav.languages) ? [...nav.languages] : [],
+    languages: Array.isArray(nav.languages) ? [...nav.languages].join(', ') : '',
     platform: String(nav.platform || ''),
     vendor: String(nav.vendor || ''),
     hardwareConcurrency: Number(nav.hardwareConcurrency) || 0,
@@ -202,10 +286,8 @@ export async function collectClientVisitorMeta() {
     maxTouchPoints: Number(nav.maxTouchPoints) || 0,
     cookieEnabled: Boolean(nav.cookieEnabled),
     doNotTrack: nav.doNotTrack == null ? '' : String(nav.doNotTrack),
-    screenWidth: Number(scr?.width) || 0,
-    screenHeight: Number(scr?.height) || 0,
-    screenAvailWidth: Number(scr?.availWidth) || 0,
-    screenAvailHeight: Number(scr?.availHeight) || 0,
+    screen: `${Number(scr?.width) || 0}×${Number(scr?.height) || 0}`,
+    screenAvail: `${Number(scr?.availWidth) || 0}×${Number(scr?.availHeight) || 0}`,
     colorDepth: Number(scr?.colorDepth) || 0,
     pixelRatio: Number(window.devicePixelRatio) || 1,
     timezone: (() => {
@@ -226,29 +308,31 @@ export async function collectClientVisitorMeta() {
     webglRenderer: webgl.renderer,
     locationHref: String(window.location?.href || ''),
     referrer: String(document.referrer || ''),
-    // 仅在 WebRTC 暴露出私网地址时有值
-    lanIps,
+    lanIps: lanProbe.lanIps,
+    mdnsHosts: lanProbe.mdnsHosts,
+    ...uaHints,
   }
 
   const fingerprintSource = [
+    visitorId,
     traits.userAgent,
     traits.language,
     traits.platform,
     traits.hardwareConcurrency,
     traits.deviceMemory,
     traits.maxTouchPoints,
-    traits.screenWidth,
-    traits.screenHeight,
+    traits.screen,
     traits.colorDepth,
     traits.pixelRatio,
     traits.timezone,
     traits.canvasFingerprint,
     traits.webglVendor,
     traits.webglRenderer,
+    traits.uaModel || '',
   ].join('|')
 
   const fingerprint = await hashFingerprint(fingerprintSource)
-  return { fingerprint, traits }
+  return { visitorId, fingerprint, traits }
 }
 
 /**

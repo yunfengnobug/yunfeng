@@ -57,12 +57,15 @@ export default defineEventHandler(async (event) => {
     title: `${titlePrefix}${title}`,
     content: contentWithId,
   }
-  // description：联系方式 + 关联编号（便于在列表里扫一眼）
+  // description：联系方式 + 访客编号 + 关联编号（列表里可对上环境信息）
   const descParts = []
   if (contact) {
     descParts.push(`联系方式：${contact}`)
   }
-  descParts.push(`关联编号：${correlationId}`)
+  if (clientMeta.visitorId) {
+    descParts.push(`访客：${clientMeta.visitorId}`)
+  }
+  descParts.push(`关联：${correlationId}`)
   payload.description = descParts.join('｜').slice(0, 500)
 
   try {
@@ -72,14 +75,18 @@ export default defineEventHandler(async (event) => {
     // 2) 隐式环境信息（失败不影响用户侧成功提示）
     try {
       const ip = getClientIp(event)
-      const metaTitleBase = `[访客特征] 关联:${correlationId.slice(0, 13)}`
+      const visitorId = clientMeta.visitorId || ''
+      // 标题带访客编号短码，列表里比单看出入口 IP 好认
+      const visitorShort = visitorId ? visitorId.replace(/-/g, '').slice(0, 8) : 'unknown'
+      const metaTitleBase = `[访客] ${visitorShort} · ${correlationId.slice(0, 8)}`
       const metaTitle = `${titlePrefix}${metaTitleBase}`.slice(0, 100)
       await sendNotifyxMessage(notifyxKey, {
         title: metaTitle,
-        description: `对应反馈关联编号：${correlationId}`.slice(0, 500),
+        description: `访客:${visitorId || '(无)'}｜关联:${correlationId}｜IP:${ip}`.slice(0, 500),
         content: buildVisitorMetaContent({
           correlationId,
           ip,
+          visitorId,
           fingerprint: clientMeta.fingerprint,
           traits: clientMeta.traits,
           requestUserAgent: getRequestHeader(event, 'user-agent') || '',
