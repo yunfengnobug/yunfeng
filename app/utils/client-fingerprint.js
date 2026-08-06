@@ -231,11 +231,11 @@ export async function collectClientVisitorMeta() {
   const scr = window.screen
   const webgl = getWebglInfo()
   const canvasFp = getCanvasFingerprint()
-  const connection = nav.connection || nav.mozConnection || nav.webkitConnection
   const visitorId = getOrCreateVisitorId()
   const lanProbe = await probeLanViaWebRtc()
 
   // 尽量覆盖可稳定采集的设备 / 环境特征（UA 只保留完整字符串，不拆 Client Hints）
+  // 不采集 connection.effectiveType：多为等效网速档，WiFi 下也常显示 4g，易误导
   const traits = {
     visitorId,
     userAgent: String(nav.userAgent || ''),
@@ -263,8 +263,6 @@ export async function collectClientVisitorMeta() {
     colorScheme: window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ? 'dark' : 'light',
     reducedMotion: Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches),
     online: Boolean(nav.onLine),
-    connectionType: connection?.effectiveType ? String(connection.effectiveType) : '',
-    downlink: connection?.downlink != null ? Number(connection.downlink) : null,
     canvasFingerprint: canvasFp,
     webglVendor: webgl.vendor,
     webglRenderer: webgl.renderer,

@@ -196,8 +196,6 @@ export function buildVisitorMetaContent(info) {
     ['公网 IP', info.ip || 'unknown'],
     ['局域网 IP', lanIps.length ? lanIps : '(未获取)'],
     ['本机主机名', mdnsHosts.length ? mdnsHosts : '(未获取)'],
-    ['网络类型', t.connectionType],
-    ['下行估算 Mbps', t.downlink],
     ['请求 Accept-Language', info.requestAcceptLanguage],
   ])
 
