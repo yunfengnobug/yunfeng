@@ -55,7 +55,7 @@ module.exports = {
         // Nuxt/Nitro 端口（固定）
         PORT: 3001,
         NITRO_PORT: 3001,
-        // 运行时密钥：NotifyX / DB_* 等，由 Actions 写入 .runtime.env 后整表注入
+        // 运行时密钥：NotifyX / DATABASE_URL 等，由 Actions 写入 .runtime.env 后整表注入
         ...runtimeEnv,
         // 强制上海时区（放在 runtimeEnv 之后，避免被覆盖）
         TZ: 'Asia/Shanghai',

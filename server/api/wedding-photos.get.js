@@ -3,8 +3,8 @@
  * GET /api/wedding-photos
  */
 export default defineEventHandler(async () => {
-  const config = useRuntimeConfig()
-  if (!config.dbHost || !config.dbUser || !config.dbName) {
+  // 未配置 DATABASE_URL / NUXT_DATABASE_URL 时直接返回空列表
+  if (!resolveDatabaseUrl()) {
     return {
       code: 1,
       message: '数据库未配置',

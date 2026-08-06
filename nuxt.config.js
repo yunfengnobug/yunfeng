@@ -22,19 +22,11 @@ export default defineNuxtConfig({
     },
   },
   // 敏感项只写空默认值，勿在此读 process.env，否则会在 pnpm build 时编进 .output。
-  // 运行时由 NUXT_*（PM2 / .runtime.env）覆盖：NUXT_NOTIFYX_KEY、NUXT_DB_* 等。
+  // 运行时由 NUXT_*（PM2 / .runtime.env）覆盖：NUXT_NOTIFYX_KEY、NUXT_DATABASE_URL 等。
   runtimeConfig: {
     // NotifyX 发送密钥（仅服务端）
     notifyxKey: '',
-    // MySQL 主机，默认本机
-    dbHost: '127.0.0.1',
-    // MySQL 端口，默认 3306
-    dbPort: '3306',
-    // MySQL 用户名
-    dbUser: '',
-    // MySQL 密码
-    dbPassword: '',
-    // MySQL 数据库名
-    dbName: '',
+    // MySQL 连接 URI，形如 mysql://user:pass@host:port/database（密码含特殊字符须 URL 编码）
+    databaseUrl: '',
   },
 })

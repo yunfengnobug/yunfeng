@@ -1,10 +1,22 @@
 /**
- * MySQL 连接工具：按 runtimeConfig 创建连接池（只读查询婚纱照等）
+ * MySQL 连接工具：按 DATABASE_URL（URI）创建连接池（只读查询婚纱照等）
  */
 import mysql from 'mysql2/promise'
 
 /** 进程内复用的连接池 */
 let pool = null
+
+/**
+ * 解析 MySQL 连接 URI
+ * 优先 runtimeConfig，再回退进程环境（兼容本地 .env / PM2 .runtime.env）
+ * @returns {string}
+ */
+export function resolveDatabaseUrl() {
+  const config = useRuntimeConfig()
+  return String(
+    config.databaseUrl || process.env.NUXT_DATABASE_URL || process.env.DATABASE_URL || '',
+  ).trim()
+}
 
 /**
  * 获取（或创建）MySQL 连接池
@@ -15,14 +27,14 @@ export function getDbPool() {
     return pool
   }
 
-  const config = useRuntimeConfig()
+  const uri = resolveDatabaseUrl()
+  if (!uri) {
+    throw new Error('数据库未配置（缺少 DATABASE_URL）')
+  }
 
   pool = mysql.createPool({
-    host: config.dbHost,
-    port: Number(config.dbPort),
-    user: config.dbUser,
-    password: config.dbPassword,
-    database: config.dbName,
+    // mysql://user:pass@host:port/database
+    uri,
     waitForConnections: true,
     connectionLimit: 5,
   })

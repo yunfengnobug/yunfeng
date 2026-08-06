@@ -29,12 +29,12 @@
 
 本地复制 `.env.example` 为 `.env`（已 gitignore，勿提交）：
 
-| 变量                                  | 说明                                          |
-| ------------------------------------- | --------------------------------------------- |
-| `TZ`                                  | 时区，固定 `Asia/Shanghai`（生产由 PM2 强制） |
-| `DB_HOST` / `DB_PORT`                 | MySQL（与 admin 同库，只读）                  |
-| `DB_USER` / `DB_PASSWORD` / `DB_NAME` | 同上                                          |
-| `NOTIFYX_KEY`                         | NotifyX 密钥（亦可用 `NUXT_NOTIFYX_KEY`）     |
+| 变量                | 说明                                                                         |
+| ------------------- | ---------------------------------------------------------------------------- |
+| `TZ`                | 时区，固定 `Asia/Shanghai`（生产由 PM2 强制）                                |
+| `DATABASE_URL`      | MySQL URI：`mysql://user:pass@host:port/db`（与 admin 同库，只读）           |
+| `NUXT_DATABASE_URL` | 本地开发须同时写（Nuxt 仅用 `NUXT_` 覆盖 runtimeConfig；线上由部署脚本补齐） |
+| `NOTIFYX_KEY`       | NotifyX 密钥（亦可用 `NUXT_NOTIFYX_KEY`）                                    |
 
 建表由 **admin** 启动时自动完成；yunfeng 不跑建表。
 
@@ -95,31 +95,28 @@ nuxt.config.js
 
 ### GitHub Secrets（Settings → Secrets and variables → Actions）
 
-| Secret 名                | 是否必填 | 说明                                                                                   |
-| ------------------------ | -------- | -------------------------------------------------------------------------------------- |
-| `HOST`                   | 是       | 服务器 IP 或域名                                                                       |
-| `USER`                   | 是       | SSH 登录用户名                                                                         |
-| `SSH_KEY`                | 是       | 部署用私钥全文（含 `BEGIN`/`END`）                                                     |
-| `ENV_PRODUCTION_YUNFENG` | 是       | 整份生产环境变量（多行 `KEY=value`，与本地 `.env` 同格式；含 `DB_*` 与 `NOTIFYX_KEY`） |
+| Secret 名                | 是否必填 | 说明                                                                                           |
+| ------------------------ | -------- | ---------------------------------------------------------------------------------------------- |
+| `HOST`                   | 是       | 服务器 IP 或域名                                                                               |
+| `USER`                   | 是       | SSH 登录用户名                                                                                 |
+| `SSH_KEY`                | 是       | 部署用私钥全文（含 `BEGIN`/`END`）                                                             |
+| `ENV_PRODUCTION_YUNFENG` | 是       | 整份生产环境变量（多行 `KEY=value`，与本地 `.env` 同格式；含 `DATABASE_URL` 与 `NOTIFYX_KEY`） |
 
 > 部署目录固定为 `/server/yunfeng`，无需再配置 `DEPLOY_PATH`。  
 > 旧的单独 Secret `NOTIFYX_KEY` 已废弃，请删掉，统一放进 `ENV_PRODUCTION_YUNFENG`。
 
-`ENV_PRODUCTION_YUNFENG` 内容示例（直接把本地 `.env` 粘贴进去即可）：
+`ENV_PRODUCTION_YUNFENG` 内容示例（可直接粘贴 `.env.production`）：
 
 ```bash
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_USER=你的数据库用户
-DB_PASSWORD=你的数据库密码
-DB_NAME=admin
+DATABASE_URL=mysql://你的用户:你的密码@127.0.0.1:3306/admin
 NOTIFYX_KEY=你的NotifyX密钥
 ```
 
 说明：
 
-- 构建产物不含数据库密码与 NotifyX 密钥；部署脚本把整份 Secret 写入服务器 `/server/yunfeng/.runtime.env`，并为 `DB_*` / `NOTIFYX_KEY` 自动补 `NUXT_*` 别名，由 PM2 注入进程。
-- 也可直接写 `NUXT_NOTIFYX_KEY=...`（不必再写 `NOTIFYX_KEY`）；两者都写时以文件中后出现的为准。
+- 构建产物不含数据库密码与 NotifyX 密钥；部署脚本把整份 Secret 写入服务器 `/server/yunfeng/.runtime.env`，并为 `DATABASE_URL` / `NOTIFYX_KEY` 自动补 `NUXT_*` 别名，由 PM2 注入进程。
+- 也可直接写 `NUXT_DATABASE_URL=...` / `NUXT_NOTIFYX_KEY=...`；两者都写时以文件中后出现的为准。
+- 密码含 `@`、`:`、`/`、`#` 等特殊字符时须 URL 编码（如 `@` → `%40`）。
 
 ### 建议反馈（NotifyX）
 
@@ -138,14 +135,11 @@ NotifyX `description`（简介）实测最长约 **64** 字（平台文档写 50
 
 计数存在进程内内存（`server/utils/rate-limit.js`）。当前 PM2 为 **单实例 fork**；进程重启会清零，多实例不共享。保持单实例即可；若要横向扩容，需先改为 Redis / DB 等共享存储。
 
-**本地开发：** 在 `.env` 中配置（与线上 Secret 同格式即可）：
+**本地开发：** 在 `.env` 中配置（本地须带 `NUXT_` 前缀才能覆盖 runtimeConfig）：
 
 ```env
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_USER=你的数据库用户
-DB_PASSWORD=你的数据库密码
-DB_NAME=admin
+DATABASE_URL=mysql://你的用户:你的密码@127.0.0.1:3306/admin
+NUXT_DATABASE_URL=mysql://你的用户:你的密码@127.0.0.1:3306/admin
 NOTIFYX_KEY=你的NotifyX密钥
 ```
 
