@@ -6,19 +6,20 @@
 
 - Vue 3 + Nuxt 4
 - SCSS（scoped + 全局样式）
-- MySQL（只读婚纱照元数据，与 admin 同库）
+- MySQL（只读婚纱照 / 订婚视频元数据，与 admin 同库）
 - pnpm 10
 - oxfmt + oxlint
 
 ## 功能页面
 
-| 路径          | 说明                                |
-| ------------- | ----------------------------------- |
-| `/`           | 首页一言                            |
-| `/about`      | 关于                                |
-| `/love`       | 婚纱照（精修 / 初修；底图弱化入口） |
-| `/love/story` | 我们的故事（原爱情纪念页）          |
-| `/changelog`  | 更新日志                            |
+| 路径               | 说明                                       |
+| ------------------ | ------------------------------------------ |
+| `/`                | 首页一言                                   |
+| `/about`           | 关于                                       |
+| `/love`            | 婚纱照（精修 / 初修；底图弱化入口）        |
+| `/love/story`      | 我们的故事（原爱情纪念页）                 |
+| `/love/engagement` | 订婚视频（七牛链接，浏览器缓存后循环播放） |
+| `/changelog`       | 更新日志                                   |
 
 ## 环境要求
 
@@ -29,12 +30,12 @@
 
 本地复制 `.env.example` 为 `.env`（已 gitignore，勿提交）：
 
-| 变量                | 说明                                                                         |
-| ------------------- | ---------------------------------------------------------------------------- |
-| `TZ`                | 时区，固定 `Asia/Shanghai`（生产由 PM2 强制）                                |
-| `DATABASE_URL`      | MySQL URI：`mysql://user:pass@host:port/db`（与 admin 同库，只读）           |
-| `NUXT_DATABASE_URL` | 本地开发须同时写（Nuxt 仅用 `NUXT_` 覆盖 runtimeConfig；线上由部署脚本补齐） |
-| `NOTIFYX_KEY`       | NotifyX 密钥（亦可用 `NUXT_NOTIFYX_KEY`）                                    |
+| 变量                | 说明                                                                                        |
+| ------------------- | ------------------------------------------------------------------------------------------- |
+| `TZ`                | 时区，固定 `Asia/Shanghai`（生产由 PM2 强制）                                               |
+| `DATABASE_URL`      | MySQL URI，与 admin 同一条：`mysql://user:pass@host:port/db`；Aiven 加 `?ssl-mode=REQUIRED` |
+| `NUXT_DATABASE_URL` | 本地开发须同时写（Nuxt 仅用 `NUXT_` 覆盖 runtimeConfig；线上由部署脚本补齐）                |
+| `NOTIFYX_KEY`       | NotifyX 密钥（亦可用 `NUXT_NOTIFYX_KEY`）                                                   |
 
 建表由 **admin** 启动时自动完成；yunfeng 不跑建表。
 
@@ -62,9 +63,9 @@ pnpm lint           # oxlint
 ```
 app/           # Nuxt 应用（页面、布局、组件、样式）
 app/composables/  # 如灯箱轨道 / 手势
-app/utils/     # 含 love-story-content、欢迎字体说明等
+app/utils/     # 含 love-story-content、订婚视频缓存、欢迎字体说明等
 public/fonts/  # 欢迎层艺术字子集（Ma Shan Zheng，OFL，不请求 Google Fonts）
-server/api/    # Nitro API（含公开婚纱照列表）
+server/api/    # Nitro API（公开婚纱照列表、订婚视频地址 / 同源文件代理）
 server/utils/  # db 连接池等
 nuxt.config.js
 ```
@@ -76,8 +77,10 @@ nuxt.config.js
 - 不强制 Element Plus；前台以原生控件 + SCSS 为主
 - **包管理仅允许 pnpm**（`packageManager` + `only-allow` + `.npmrc`）
 - 婚纱照数据由 admin 后台上传到七牛并写库；本站 `GET /api/wedding-photos` 只读展示
+- MySQL 只配一条 `DATABASE_URL`（与 admin 相同 URI，含 `?ssl-mode=REQUIRED` 时自动开 TLS），不使用 `DB_HOST` / `DB_PASSWORD` 等拆项
 - 展示侧通过七牛 `imageView2` 拉缩略图 / 预览图（webp、限宽），库内仍存原图 CDN 地址，不改对象本身；已加载标记有 LRU 上限，离开婚纱照页会清空，不另建 blob 内存缓存
 - `/love` 欢迎层艺术字用 `public/fonts/` 本地子集字体（约 3KB），不请求 Google Fonts
+- `/love/engagement` 读 `GET /api/engagement-video`（七牛 CDN URL）；按 `qiniu_key` 写入浏览器 Cache Storage，命中后以 blob 播放。同页循环与再次进入不重复拉七牛；换片（新 key）才会重新下载。七牛未开 CORS 时走同源 `GET /api/engagement-video/file` 再写入缓存
 
 ## 部署（GitHub Actions + PM2）
 
@@ -105,10 +108,10 @@ nuxt.config.js
 > 部署目录固定为 `/server/yunfeng`，无需再配置 `DEPLOY_PATH`。  
 > 旧的单独 Secret `NOTIFYX_KEY` 已废弃，请删掉，统一放进 `ENV_PRODUCTION_YUNFENG`。
 
-`ENV_PRODUCTION_YUNFENG` 内容示例（可直接粘贴 `.env.production`）：
+`ENV_PRODUCTION_YUNFENG` 内容示例（可直接粘贴 `.env.production`，`DATABASE_URL` 须与 admin 相同）：
 
 ```bash
-DATABASE_URL=mysql://你的用户:你的密码@127.0.0.1:3306/admin
+DATABASE_URL=mysql://你的用户:你的密码@主机:25147/admin?ssl-mode=REQUIRED
 NOTIFYX_KEY=你的NotifyX密钥
 ```
 
@@ -138,8 +141,8 @@ NotifyX `description`（简介）实测最长约 **64** 字（平台文档写 50
 **本地开发：** 在 `.env` 中配置（本地须带 `NUXT_` 前缀才能覆盖 runtimeConfig）：
 
 ```env
-DATABASE_URL=mysql://你的用户:你的密码@127.0.0.1:3306/admin
-NUXT_DATABASE_URL=mysql://你的用户:你的密码@127.0.0.1:3306/admin
+DATABASE_URL=mysql://你的用户:你的密码@主机:25147/admin?ssl-mode=REQUIRED
+NUXT_DATABASE_URL=mysql://你的用户:你的密码@主机:25147/admin?ssl-mode=REQUIRED
 NOTIFYX_KEY=你的NotifyX密钥
 ```
 

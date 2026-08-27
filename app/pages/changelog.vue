@@ -7,6 +7,18 @@ useSeoMeta({
 
 const changelogData = [
   {
+    id: 5,
+    version: 'v1.4.0',
+    title: '新增订婚视频页',
+    date: '2026-08-27',
+    items: [
+      '新增订婚视频页，进入后默认自动循环播放',
+      '视频由后台上传七牛，浏览器按片缓存，重复播放不再拉 CDN',
+    ],
+    status: 'stable',
+    creator_name: '云枫',
+  },
+  {
     id: 1,
     version: 'v1.2.0',
     title: '功能增强与性能优化',

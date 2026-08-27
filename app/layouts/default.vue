@@ -32,6 +32,9 @@ const contentPadding = computed(() => {
           <li>
             <NuxtLink to="/love">我们</NuxtLink>
           </li>
+          <li>
+            <NuxtLink to="/love/engagement">订婚</NuxtLink>
+          </li>
         </ul>
       </nav>
     </header>

@@ -4,7 +4,10 @@
     <p class="wedding-hero__eyebrow">Wedding</p>
     <h1 class="wedding-hero__title">我们的婚纱照</h1>
     <p class="wedding-hero__subtitle">精修与初修，定格这一天</p>
-    <NuxtLink to="/love/story" class="wedding-hero__story-link">我们的故事 →</NuxtLink>
+    <div class="wedding-hero__links">
+      <NuxtLink to="/love/story" class="wedding-hero__story-link">我们的故事 →</NuxtLink>
+      <NuxtLink to="/love/engagement" class="wedding-hero__story-link">订婚视频 →</NuxtLink>
+    </div>
   </header>
 </template>
 
@@ -34,6 +37,13 @@
     margin: 0 0 1.5rem;
     font-size: 0.95rem;
     color: #7a6a60;
+  }
+
+  &__links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem 1.5rem;
   }
 
   &__story-link {

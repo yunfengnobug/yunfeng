@@ -19,8 +19,9 @@ const titleChars = LOVE_STORY_TITLE.split('')
 
 <template>
   <div class="love-story-body">
-    <nav class="story-nav" aria-label="返回婚纱照">
+    <nav class="story-nav" aria-label="故事页导航">
       <NuxtLink to="/love" class="story-nav__link">← 返回婚纱照</NuxtLink>
+      <NuxtLink to="/love/engagement" class="story-nav__link">订婚视频 →</NuxtLink>
     </nav>
 
     <header class="header">
@@ -121,6 +122,10 @@ const titleChars = LOVE_STORY_TITLE.split('')
   .story-nav {
     position: relative;
     z-index: 3;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.75rem;
     padding: 1rem 1.25rem 0;
     max-width: 960px;
     margin: 0 auto;
