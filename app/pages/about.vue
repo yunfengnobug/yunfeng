@@ -2,6 +2,7 @@
 // 关于页：作者、爱情、网站与在线建议反馈
 
 useSeoMeta({
+  title: '关于',
   description: '关于我们、爱情、本站与建议反馈',
 })
 </script>

@@ -1,4 +1,6 @@
 // Nuxt 4 应用配置（纯 JavaScript）
+import { SITE_DESCRIPTION, SITE_NAME } from './app/utils/site.js'
+
 export default defineNuxtConfig({
   // 兼容性日期，控制行为切换时间点
   compatibilityDate: '2025-07-15',
@@ -15,10 +17,20 @@ export default defineNuxtConfig({
       htmlAttrs: { lang: 'zh-CN' },
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
-      // 全站固定标题，个别页面后续再单独覆盖
-      title: '王俊杰 ❤️ 李朝新',
+      // 默认文档标题为站点品牌；内页由 app.vue 的 titleTemplate 拼「页面 · 云枫」
+      title: SITE_NAME,
       titleTemplate: '%s',
-      meta: [{ name: 'description', content: '王俊杰与李朝新的网站：记录生活、技术与爱' }],
+      meta: [
+        { name: 'description', content: SITE_DESCRIPTION },
+        // 安装到主屏幕 / 浏览器应用名
+        { name: 'application-name', content: SITE_NAME },
+        { name: 'apple-mobile-web-app-title', content: SITE_NAME },
+        { property: 'og:site_name', content: SITE_NAME },
+        { property: 'og:title', content: SITE_NAME },
+        { property: 'og:description', content: SITE_DESCRIPTION },
+        { name: 'twitter:title', content: SITE_NAME },
+        { name: 'twitter:description', content: SITE_DESCRIPTION },
+      ],
     },
   },
   // 敏感项只写空默认值，勿在此读 process.env，否则会在 pnpm build 时编进 .output。

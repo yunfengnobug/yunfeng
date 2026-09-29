@@ -1,6 +1,6 @@
-# 王俊杰 ❤️ 李朝新
+# 云枫
 
-个人网站，基于 Vue 3 + Nuxt 4（SSR），纯 JavaScript。
+个人网站（yzre.cn），基于 Vue 3 + Nuxt 4（SSR），纯 JavaScript。站点公开品牌为「云枫」；恋爱相关页面仍记录 王俊杰 ❤️ 李朝新。
 
 ## 技术栈
 
@@ -72,7 +72,7 @@ nuxt.config.js
 
 ## 说明
 
-- 站点名称：`王俊杰 ❤️ 李朝新`（见 `app/utils/site.js`）
+- 站点名称：`云枫`（见 `app/utils/site.js`；导航、页脚、浏览器标签与 og:title 共用）
 - 默认开启 SSR；涉及随机动画或浏览器 API 的部分使用客户端组件 / `ClientOnly`
 - 不强制 Element Plus；前台以原生控件 + SCSS 为主
 - **包管理仅允许 pnpm**（`packageManager` + `only-allow` + `.npmrc`）

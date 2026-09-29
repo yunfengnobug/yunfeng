@@ -2,7 +2,10 @@
 // 首页：浏览器端请求一言（按用户 IP 计限流，避免服务端同 IP QPS）
 
 useSeoMeta({
+  title: SITE_NAME,
   description: SITE_DESCRIPTION,
+  ogTitle: SITE_NAME,
+  twitterTitle: SITE_NAME,
 })
 
 const hitokotoText = ref('用代码表达言语的魅力，用代码书写山河的壮丽。')
