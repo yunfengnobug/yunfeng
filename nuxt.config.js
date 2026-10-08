@@ -33,6 +33,16 @@ export default defineNuxtConfig({
       ],
     },
   },
+  // 短链：/text → 神通游客 Windows x64 安装包（版本更新时改目标 URL）
+  // 302：目标带版本号，避免浏览器把旧安装包地址永久缓存
+  routeRules: {
+    '/text': {
+      redirect: {
+        to: 'https://static.yxuer.com/yxuer/shentongyouke-tauri/shentongyouke-tauri_2.0.3_x64-setup.exe',
+        statusCode: 302,
+      },
+    },
+  },
   // 敏感项只写空默认值，勿在此读 process.env，否则会在 pnpm build 时编进 .output。
   // 运行时由 NUXT_*（PM2 / .runtime.env）覆盖：NUXT_NOTIFYX_KEY、NUXT_DATABASE_URL 等。
   runtimeConfig: {

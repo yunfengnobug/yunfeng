@@ -20,6 +20,7 @@
 | `/love/story`      | 我们的故事（原爱情纪念页）                 |
 | `/love/engagement` | 订婚视频（七牛链接，浏览器缓存后循环播放） |
 | `/changelog`       | 更新日志                                   |
+| `/text`            | 短链，302 到神通游客 Windows x64 安装包    |
 
 ## 环境要求
 
@@ -81,6 +82,7 @@ nuxt.config.js
 - 展示侧通过七牛 `imageView2` 拉缩略图 / 预览图（webp、限宽），库内仍存原图 CDN 地址，不改对象本身；已加载标记有 LRU 上限，离开婚纱照页会清空，不另建 blob 内存缓存
 - `/love` 欢迎层艺术字用 `public/fonts/` 本地子集字体（约 3KB），不请求 Google Fonts
 - `/love/engagement` 读 `GET /api/engagement-video`（七牛 CDN URL）；按 `qiniu_key` 写入浏览器 Cache Storage，命中后以 blob 播放。同页循环与再次进入不重复拉七牛；换片（新 key）才会重新下载。七牛未开 CORS 时走同源 `GET /api/engagement-video/file` 再写入缓存
+- `/text` 由 `nuxt.config.js` 的 `routeRules` 做 302，跳到神通游客安装包 CDN；`yzre.cn` 与 `www.yzre.cn` 共用同一应用时均生效。换版本时改该目标 URL
 
 ## 部署（GitHub Actions + PM2）
 
